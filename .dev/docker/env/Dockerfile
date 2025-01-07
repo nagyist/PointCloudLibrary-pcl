@@ -30,14 +30,19 @@ RUN apt-get update \
       clang-tidy \
       libbenchmark-dev \
       libblas-dev \
-      libboost-date-time-dev \
+      libboost-serialization-dev \
       libboost-filesystem-dev \
       libboost-iostreams-dev \
+      libboost-system-dev \
+      libcjson-dev \
       libflann-dev \
       libglew-dev \
+      freeglut3-dev \
       libgtest-dev \
+      libomp-dev \
       libopenni-dev \
       libopenni2-dev \
+      libpcap-dev \
       libproj-dev \
       libqhull-dev \
       libqt5opengl5-dev \

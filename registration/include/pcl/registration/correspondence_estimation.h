@@ -72,9 +72,11 @@ public:
 
   using KdTree = pcl::search::KdTree<PointTarget>;
   using KdTreePtr = typename KdTree::Ptr;
+  using KdTreeConstPtr = typename KdTree::ConstPtr;
 
   using KdTreeReciprocal = pcl::search::KdTree<PointSource>;
-  using KdTreeReciprocalPtr = typename KdTree::Ptr;
+  using KdTreeReciprocalPtr = typename KdTreeReciprocal::Ptr;
+  using KdTreeReciprocalConstPtr = typename KdTreeReciprocal::ConstPtr;
 
   using PointCloudSource = pcl::PointCloud<PointSource>;
   using PointCloudSourcePtr = typename PointCloudSource::Ptr;
@@ -85,6 +87,8 @@ public:
   using PointCloudTargetConstPtr = typename PointCloudTarget::ConstPtr;
 
   using PointRepresentationConstPtr = typename KdTree::PointRepresentationConstPtr;
+  using PointRepresentationReciprocalConstPtr =
+      typename KdTreeReciprocal::PointRepresentationConstPtr;
 
   /** \brief Empty constructor. */
   CorrespondenceEstimationBase()
@@ -94,10 +98,6 @@ public:
   , target_()
   , point_representation_()
   , input_transformed_()
-  , target_cloud_updated_(true)
-  , source_cloud_updated_(true)
-  , force_no_recompute_(false)
-  , force_no_recompute_reciprocal_(false)
   {}
 
   /** \brief Empty destructor */
@@ -135,6 +135,23 @@ public:
   getInputTarget()
   {
     return (target_);
+  }
+
+  /** \brief Set the number of threads to use.
+   * \param nr_threads the number of hardware threads to use (0 sets the value back to
+   * automatic)
+   */
+  void
+  setNumberOfThreads(unsigned int nr_threads)
+  {
+#ifdef _OPENMP
+    num_threads_ = nr_threads != 0 ? nr_threads : omp_get_num_procs();
+#else
+    if (nr_threads != 1) {
+      PCL_WARN("OpenMP is not available. Keeping number of threads unchanged at 1\n");
+    }
+    num_threads_ = 1;
+#endif
   }
 
   /** \brief See if this rejector requires source normals */
@@ -275,8 +292,8 @@ public:
       pcl::Correspondences& correspondences,
       double max_distance = std::numeric_limits<double>::max()) = 0;
 
-  /** \brief Provide a boost shared pointer to the PointRepresentation to be used
-   * when searching for nearest neighbors.
+  /** \brief Provide a boost shared pointer to the PointRepresentation for target cloud
+   * to be used when searching for nearest neighbors.
    *
    * \param[in] point_representation the PointRepresentation to be used by the
    * k-D tree for nearest neighbor search
@@ -285,6 +302,19 @@ public:
   setPointRepresentation(const PointRepresentationConstPtr& point_representation)
   {
     point_representation_ = point_representation;
+  }
+
+  /** \brief Provide a boost shared pointer to the PointRepresentation for source cloud
+   * to be used when searching for nearest neighbors.
+   *
+   * \param[in] point_representation the PointRepresentation to be used by the
+   * k-D tree for nearest neighbor search
+   */
+  inline void
+  setPointRepresentationReciprocal(
+      const PointRepresentationReciprocalConstPtr& point_representation_reciprocal)
+  {
+    point_representation_reciprocal_ = point_representation_reciprocal;
   }
 
   /** \brief Clone and cast to CorrespondenceEstimationBase */
@@ -307,8 +337,11 @@ protected:
   /** \brief The target point cloud dataset indices. */
   IndicesPtr target_indices_;
 
-  /** \brief The point representation used (internal). */
+  /** \brief The target point representation used (internal). */
   PointRepresentationConstPtr point_representation_;
+
+  /** \brief The source point representation used (internal). */
+  PointRepresentationReciprocalConstPtr point_representation_reciprocal_;
 
   /** \brief The transformed input source point cloud dataset. */
   PointCloudTargetPtr input_transformed_;
@@ -334,23 +367,25 @@ protected:
   /** \brief Variable that stores whether we have a new target cloud, meaning we need to
    * pre-process it again. This way, we avoid rebuilding the kd-tree for the target
    * cloud every time the determineCorrespondences () method is called. */
-  bool target_cloud_updated_;
+  bool target_cloud_updated_{true};
   /** \brief Variable that stores whether we have a new source cloud, meaning we need to
    * pre-process it again. This way, we avoid rebuilding the reciprocal kd-tree for the
    * source cloud every time the determineCorrespondences () method is called. */
-  bool source_cloud_updated_;
+  bool source_cloud_updated_{true};
   /** \brief A flag which, if set, means the tree operating on the target cloud
    * will never be recomputed*/
-  bool force_no_recompute_;
+  bool force_no_recompute_{false};
 
   /** \brief A flag which, if set, means the tree operating on the source cloud
    * will never be recomputed*/
-  bool force_no_recompute_reciprocal_;
+  bool force_no_recompute_reciprocal_{false};
+
+  unsigned int num_threads_{1};
 };
 
-/** \brief @b CorrespondenceEstimation represents the base class for
+/** \brief @b CorrespondenceEstimation represents a simple class for
  * determining correspondences between target and query point
- * sets/features.
+ * sets/features, using nearest neighbor search.
  *
  * Code example:
  *
@@ -396,8 +431,24 @@ public:
   using CorrespondenceEstimationBase<PointSource, PointTarget, Scalar>::input_fields_;
   using PCLBase<PointSource>::deinitCompute;
 
-  using KdTree = pcl::search::KdTree<PointTarget>;
-  using KdTreePtr = typename KdTree::Ptr;
+  using KdTree =
+      typename CorrespondenceEstimationBase<PointSource, PointTarget, Scalar>::KdTree;
+  using KdTreePtr = typename CorrespondenceEstimationBase<PointSource,
+                                                          PointTarget,
+                                                          Scalar>::KdTreePtr;
+  using KdTreeConstPtr = typename CorrespondenceEstimationBase<PointSource,
+                                                               PointTarget,
+                                                               Scalar>::KdTreeConstPtr;
+  using KdTreeReciprocal =
+      typename CorrespondenceEstimationBase<PointSource, PointTarget, Scalar>::
+          KdTreeReciprocal;
+  using KdTreeReciprocalPtr =
+      typename CorrespondenceEstimationBase<PointSource, PointTarget, Scalar>::
+          KdTreeReciprocalPtr;
+
+  using KdTreeReciprocalConstPtr =
+      typename CorrespondenceEstimationBase<PointSource, PointTarget, Scalar>::
+          KdTreeReciprocalConstPtr;
 
   using PointCloudSource = pcl::PointCloud<PointSource>;
   using PointCloudSourcePtr = typename PointCloudSource::Ptr;
@@ -408,6 +459,8 @@ public:
   using PointCloudTargetConstPtr = typename PointCloudTarget::ConstPtr;
 
   using PointRepresentationConstPtr = typename KdTree::PointRepresentationConstPtr;
+  using PointRepresentationReciprocalConstPtr =
+      typename KdTreeReciprocal::PointRepresentationConstPtr;
 
   /** \brief Empty constructor. */
   CorrespondenceEstimation() { corr_name_ = "CorrespondenceEstimation"; }
@@ -445,6 +498,9 @@ public:
     Ptr copy(new CorrespondenceEstimation<PointSource, PointTarget, Scalar>(*this));
     return (copy);
   }
+
+protected:
+  using CorrespondenceEstimationBase<PointSource, PointTarget, Scalar>::num_threads_;
 };
 } // namespace registration
 } // namespace pcl

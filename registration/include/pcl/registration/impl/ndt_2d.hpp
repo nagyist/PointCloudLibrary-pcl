@@ -99,7 +99,7 @@ class NormalDist {
   using PointCloud = pcl::PointCloud<PointT>;
 
 public:
-  NormalDist() : min_n_(3), n_(0) {}
+  NormalDist() = default;
 
   /** \brief Store a point index to use later for estimating distribution parameters.
    * \param[in] i Point index to store
@@ -121,8 +121,8 @@ public:
     Eigen::Vector2d sx = Eigen::Vector2d::Zero();
     Eigen::Matrix2d sxx = Eigen::Matrix2d::Zero();
 
-    for (auto i = pt_indices_.cbegin(); i != pt_indices_.cend(); i++) {
-      Eigen::Vector2d p(cloud[*i].x, cloud[*i].y);
+    for (const auto& pt_index : pt_indices_) {
+      Eigen::Vector2d p(cloud[pt_index].x, cloud[pt_index].y);
       sx += p;
       sxx += p * p.transpose();
     }
@@ -203,9 +203,9 @@ public:
   }
 
 protected:
-  const std::size_t min_n_;
+  const std::size_t min_n_{3};
 
-  std::size_t n_;
+  std::size_t n_{0};
   std::vector<std::size_t> pt_indices_;
   Eigen::Vector2d mean_;
   Eigen::Matrix2d covar_inv_;

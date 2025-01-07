@@ -59,15 +59,12 @@ namespace pcl
       using Feature<PointInT, PointOutT>::k_;
 
       /** \brief Constructor */
-      LinearLeastSquaresNormalEstimation () :
-          use_depth_dependent_smoothing_(false),
-          max_depth_change_factor_(1.0f),
-          normal_smoothing_size_(9.0f)
+      LinearLeastSquaresNormalEstimation ()
       {
           feature_name_ = "LinearLeastSquaresNormalEstimation";
           tree_.reset ();
           k_ = 1;
-      };
+      }
 
       /** \brief Destructor */
       ~LinearLeastSquaresNormalEstimation () override;
@@ -131,13 +128,13 @@ namespace pcl
       //float distance_threshold_;
 
       /** \brief Smooth data based on depth (true/false). */
-      bool use_depth_dependent_smoothing_;
+      bool use_depth_dependent_smoothing_{false};
 
       /** \brief Threshold for detecting depth discontinuities */
-      float max_depth_change_factor_;
+      float max_depth_change_factor_{1.0f};
 
       /** \brief */
-      float normal_smoothing_size_;
+      float normal_smoothing_size_{9.0f};
   };
 }
 

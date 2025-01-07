@@ -59,10 +59,11 @@ IntegralImage2D<DataType, Dimension>::setInput (const DataType * data, unsigned 
   {
     width_  = width;
     height_ = height;
-    first_order_integral_image_.resize ( (width_ + 1) * (height_ + 1) );
-    finite_values_integral_image_.resize ( (width_ + 1) * (height_ + 1) );
+    const std::size_t ii_size = static_cast<std::size_t>(width_ + 1) * static_cast<std::size_t>(height_ + 1);
+    first_order_integral_image_.resize (ii_size);
+    finite_values_integral_image_.resize (ii_size);
     if (compute_second_order_integral_images_)
-      second_order_integral_image_.resize ( (width_ + 1) * (height_ + 1) );
+      second_order_integral_image_.resize (ii_size);
   }
   computeIntegralImages (data, row_stride, element_stride);
 }
@@ -156,12 +157,12 @@ template <typename DataType, unsigned Dimension> void
 IntegralImage2D<DataType, Dimension>::computeIntegralImages (
     const DataType *data, unsigned row_stride, unsigned element_stride)
 {
-  ElementType* previous_row = &first_order_integral_image_[0];
+  ElementType* previous_row = first_order_integral_image_.data();
   ElementType* current_row  = previous_row + (width_ + 1);
   for (unsigned int i = 0; i < (width_ + 1); ++i)
     previous_row[i].setZero();
 
-  unsigned* count_previous_row = &finite_values_integral_image_[0];
+  unsigned* count_previous_row = finite_values_integral_image_.data();
   unsigned* count_current_row  = count_previous_row + (width_ + 1);
   std::fill_n(count_previous_row, width_ + 1, 0);
 
@@ -188,7 +189,7 @@ IntegralImage2D<DataType, Dimension>::computeIntegralImages (
   }
   else
   {
-    SecondOrderType* so_previous_row = &second_order_integral_image_[0];
+    SecondOrderType* so_previous_row = second_order_integral_image_.data();
     SecondOrderType* so_current_row  = so_previous_row + (width_ + 1);
     for (unsigned int i = 0; i < (width_ + 1); ++i)
       so_previous_row[i].setZero();
@@ -230,10 +231,11 @@ IntegralImage2D<DataType, 1>::setInput (const DataType * data, unsigned width,un
   {
     width_  = width;
     height_ = height;
-    first_order_integral_image_.resize ( (width_ + 1) * (height_ + 1) );
-    finite_values_integral_image_.resize ( (width_ + 1) * (height_ + 1) );
+    const std::size_t ii_size = static_cast<std::size_t>(width_ + 1) * static_cast<std::size_t>(height_ + 1);
+    first_order_integral_image_.resize (ii_size);
+    finite_values_integral_image_.resize (ii_size);
     if (compute_second_order_integral_images_)
-      second_order_integral_image_.resize ( (width_ + 1) * (height_ + 1) );
+      second_order_integral_image_.resize (ii_size);
   }
   computeIntegralImages (data, row_stride, element_stride);
 }
@@ -327,11 +329,11 @@ template <typename DataType> void
 IntegralImage2D<DataType, 1>::computeIntegralImages (
     const DataType *data, unsigned row_stride, unsigned element_stride)
 {
-  ElementType* previous_row = &first_order_integral_image_[0];
+  ElementType* previous_row = first_order_integral_image_.data();
   ElementType* current_row  = previous_row + (width_ + 1);
   std::fill_n(previous_row, width_ + 1, 0);
 
-  unsigned* count_previous_row = &finite_values_integral_image_[0];
+  unsigned* count_previous_row = finite_values_integral_image_.data();
   unsigned* count_current_row  = count_previous_row + (width_ + 1);
   std::fill_n(count_previous_row, width_ + 1, 0);
 
@@ -357,7 +359,7 @@ IntegralImage2D<DataType, 1>::computeIntegralImages (
   }
   else
   {
-    SecondOrderType* so_previous_row = &second_order_integral_image_[0];
+    SecondOrderType* so_previous_row = second_order_integral_image_.data();
     SecondOrderType* so_current_row  = so_previous_row + (width_ + 1);
     std::fill_n(so_previous_row, width_ + 1, 0);
 

@@ -43,6 +43,9 @@
 
 namespace pcl
 {
+  /** \brief Similar to the Point Feature Histogram descriptor, but also takes color into account. See also \ref PFHEstimation
+    * \ingroup features
+    */
   template <typename PointInT, typename PointNT, typename PointOutT = pcl::PFHRGBSignature250>
   class PFHRGBEstimation : public FeatureFromNormals<PointInT, PointNT, PointOutT>
   {
@@ -59,7 +62,7 @@ namespace pcl
 
 
       PFHRGBEstimation ()
-        : nr_subdiv_ (5), d_pi_ (1.0f / (2.0f * static_cast<float> (M_PI)))
+        :  d_pi_ (1.0f / (2.0f * static_cast<float> (M_PI)))
       {
         feature_name_ = "PFHRGBEstimation";
       }
@@ -79,7 +82,7 @@ namespace pcl
 
     private:
       /** \brief The number of subdivisions for each angular feature interval. */
-      int nr_subdiv_;
+      int nr_subdiv_{5};
 
       /** \brief Placeholder for a point's PFHRGB signature. */
       Eigen::VectorXf pfhrgb_histogram_;

@@ -32,7 +32,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  *
- * Implementation of the ISM algorithm described in "Hough Transforms and 3D SURF for robust three dimensional classication"
+ * Implementation of the ISM algorithm described in "Hough Transforms and 3D SURF for robust three dimensional classification"
  * by Jan Knopp, Mukta Prasad, Geert Willems, Radu Timofte, and Luc Van Gool
  *
  * Authors: Roman Shapovalov, Alexander Velizhev, Sergey Ushakov
@@ -49,15 +49,7 @@
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
-pcl::features::ISMVoteList<PointT>::ISMVoteList () :
-  votes_ (new pcl::PointCloud<pcl::InterestPoint> ()),
-  tree_is_valid_ (false),
-  votes_origins_ (new pcl::PointCloud<PointT> ()),
-  votes_class_ (0),
-  k_ind_ (0),
-  k_sqr_dist_ (0)
-{
-}
+pcl::features::ISMVoteList<PointT>::ISMVoteList() = default;
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
@@ -192,8 +184,8 @@ pcl::features::ISMVoteList<PointT>::findStrongestPeaks (
         best_density = peak_densities[i];
         strongest_peak = peaks[i];
         best_peak_ind = i;
+        ++peak_counter;
       }
-      ++peak_counter;
     }
 
     if( peak_counter == 0 )
@@ -297,18 +289,7 @@ pcl::features::ISMVoteList<PointT>::getNumberOfVotes ()
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-pcl::features::ISMModel::ISMModel () :
-  statistical_weights_ (0),
-  learned_weights_ (0),
-  classes_ (0),
-  sigmas_ (0),
-  clusters_ (0),
-  number_of_classes_ (0),
-  number_of_visual_words_ (0),
-  number_of_clusters_ (0),
-  descriptors_dimension_ (0)
-{
-}
+pcl::features::ISMModel::ISMModel () = default;
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 pcl::features::ISMModel::ISMModel (ISMModel const & copy)
@@ -546,17 +527,7 @@ pcl::features::ISMModel::operator = (const pcl::features::ISMModel& other)
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 template <int FeatureSize, typename PointT, typename NormalT>
-pcl::ism::ImplicitShapeModelEstimation<FeatureSize, PointT, NormalT>::ImplicitShapeModelEstimation () :
-  training_clouds_ (0),
-  training_classes_ (0),
-  training_normals_ (0),
-  training_sigmas_ (0),
-  sampling_size_ (0.1f),
-  feature_estimator_ (),
-  number_of_clusters_ (184),
-  n_vot_ON_ (true)
-{
-}
+pcl::ism::ImplicitShapeModelEstimation<FeatureSize, PointT, NormalT>::ImplicitShapeModelEstimation () = default;
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 template <int FeatureSize, typename PointT, typename NormalT>
@@ -1280,7 +1251,7 @@ pcl::ism::ImplicitShapeModelEstimation<FeatureSize, PointT, NormalT>::computeKMe
   Eigen::MatrixXf old_centers (number_of_clusters, feature_dimension);
   std::vector<int> counters (number_of_clusters);
   std::vector<Eigen::Vector2f, Eigen::aligned_allocator<Eigen::Vector2f> > boxes (feature_dimension);
-  Eigen::Vector2f* box = &boxes[0];
+  Eigen::Vector2f* box = boxes.data();
 
   double best_compactness = std::numeric_limits<double>::max ();
   double compactness = 0.0;
@@ -1428,7 +1399,7 @@ pcl::ism::ImplicitShapeModelEstimation<FeatureSize, PointT, NormalT>::generateCe
   std::size_t dimension = data.cols ();
   auto number_of_points = static_cast<unsigned int> (data.rows ());
   std::vector<int> centers_vec (number_of_clusters);
-  int* centers = &centers_vec[0];
+  int* centers = centers_vec.data();
   std::vector<double> dist (number_of_points);
   std::vector<double> tdist (number_of_points);
   std::vector<double> tdist2 (number_of_points);

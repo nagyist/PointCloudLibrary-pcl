@@ -49,11 +49,7 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointInT, typename PointOutT>
 pcl::ROPSEstimation <PointInT, PointOutT>::ROPSEstimation () :
-  number_of_bins_ (5),
-  number_of_rotations_ (3),
-  support_radius_ (1.0f),
-  sqr_support_radius_ (1.0f),
-  step_ (22.5f),
+  
   triangles_ (0),
   triangles_of_the_point_ (0)
 {
@@ -287,9 +283,9 @@ pcl::ROPSEstimation <PointInT, PointOutT>::computeLRF (const PointInT& point, co
   }
 
   if (std::abs (total_area) < std::numeric_limits <float>::epsilon ())
-    total_area = 1.0f / total_area;
-  else
     total_area = 1.0f;
+  else
+    total_area = 1.0f / total_area;
 
   Eigen::Matrix3f overall_scatter_matrix;
   overall_scatter_matrix.setZero ();

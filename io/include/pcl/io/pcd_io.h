@@ -284,6 +284,7 @@ namespace pcl
         // If no error, convert the data
         if (res == 0)
           pcl::fromPCLPointCloud2 (blob, cloud);
+
         return (res);
       }
 
@@ -297,7 +298,7 @@ namespace pcl
   class PCL_EXPORTS PCDWriter : public FileWriter
   {
     public:
-      PCDWriter() : map_synchronization_(false) {}
+      PCDWriter() = default;
       ~PCDWriter() override = default;
 
       /** \brief Set whether mmap() synchornization via msync() is desired before munmap() calls.
@@ -399,6 +400,17 @@ namespace pcl
         */
       int
       writeBinary (const std::string &file_name, const pcl::PCLPointCloud2 &cloud,
+                   const Eigen::Vector4f &origin = Eigen::Vector4f::Zero (),
+                   const Eigen::Quaternionf &orientation = Eigen::Quaternionf::Identity ());
+
+      /** \brief Save point cloud data to a std::ostream containing n-D points, in BINARY format
+        * \param[out] os the stream into which to write the data
+        * \param[in] cloud the point cloud data message
+        * \param[in] origin the sensor acquisition origin
+        * \param[in] orientation the sensor acquisition orientation
+        */
+      int
+      writeBinary (std::ostream &os, const pcl::PCLPointCloud2 &cloud,
                    const Eigen::Vector4f &origin = Eigen::Vector4f::Zero (),
                    const Eigen::Quaternionf &orientation = Eigen::Quaternionf::Identity ());
 
@@ -603,7 +615,7 @@ namespace pcl
 
     private:
       /** \brief Set to true if msync() should be called before munmap(). Prevents data loss on NFS systems. */
-      bool map_synchronization_;
+      bool map_synchronization_{false};
   };
 
   namespace io

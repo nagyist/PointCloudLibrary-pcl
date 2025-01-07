@@ -194,7 +194,7 @@ RangeImage::createFromPointCloudWithKnownSize (const PointCloudType& point_cloud
   image_offset_y_ = (std::max) (0, center_pixel_y-pixel_radius_y);
 
   points.clear ();
-  points.resize (width*height, unobserved_point);
+  points.resize (static_cast<std::size_t>(width)*static_cast<std::size_t>(height), unobserved_point);
   
   int top=height, right=-1, bottom=-1, left=width;
   doZBuffer (point_cloud, noise_level, min_range, top, right, bottom, left);
@@ -470,7 +470,7 @@ RangeImage::isValid (int index) const
 bool 
 RangeImage::isObserved (int x, int y) const
 {
-  return !(!isInImage (x,y) || (std::isinf (getPoint (x,y).range) && getPoint (x,y).range < 0.0f));
+  return (isInImage (x,y) && (!std::isinf (getPoint (x,y).range) || getPoint (x,y).range >= 0.0f));
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -682,7 +682,7 @@ RangeImage::getAcutenessValue (int x1, int y1, int x2, int y2) const
 const Eigen::Vector3f 
 RangeImage::getSensorPos () const
 {
-  return Eigen::Vector3f (to_world_system_ (0,3), to_world_system_ (1,3), to_world_system_ (2,3));
+  return {to_world_system_ (0,3), to_world_system_ (1,3), to_world_system_ (2,3)};
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -801,7 +801,7 @@ RangeImage::getMaxAngleSize (const Eigen::Affine3f& viewer_pose, const Eigen::Ve
 Eigen::Vector3f 
 RangeImage::getEigenVector3f (const PointWithRange& point)
 {
-  return Eigen::Vector3f (point.x, point.y, point.z);
+  return {point.x, point.y, point.z};
 }
 
 /////////////////////////////////////////////////////////////////////////

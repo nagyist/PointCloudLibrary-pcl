@@ -319,7 +319,11 @@ pcl::GridProjection<PointNT>::getProjectionWithPlaneFit (const Eigen::Vector4f &
   Eigen::Matrix3f covariance_matrix;
   Eigen::Vector4f xyz_centroid;
 
-  computeMeanAndCovarianceMatrix (*data_, pt_union_indices, covariance_matrix, xyz_centroid);
+  if (computeMeanAndCovarianceMatrix (*data_, pt_union_indices, covariance_matrix, xyz_centroid) == 0) {
+    PCL_ERROR("[pcl::GridProjection::getProjectionWithPlaneFit] cloud or indices are empty!\n");
+    projection = p;
+    return;
+  }
 
   // Get the plane normal
   EIGEN_ALIGN16 Eigen::Vector3f::Scalar eigen_value;
@@ -626,9 +630,7 @@ pcl::GridProjection<PointNT>::reconstructPolygons (std::vector<pcl::Vertices> &p
   for (pcl::index_t cp = 0; cp < static_cast<pcl::index_t> (data_->size ()); ++cp)
   {
     // Check if the point is invalid
-    if (!std::isfinite ((*data_)[cp].x) ||
-        !std::isfinite ((*data_)[cp].y) ||
-        !std::isfinite ((*data_)[cp].z))
+    if (!pcl::isXYZFinite((*data_)[cp]))
       continue;
 
     Eigen::Vector3i index_3d;
@@ -640,7 +642,7 @@ pcl::GridProjection<PointNT>::reconstructPolygons (std::vector<pcl::Vertices> &p
       cell_data.data_indices.push_back (cp);
       getCellCenterFromIndex (index_3d, cell_data.pt_on_surface);
       cell_hash_map_[index_1d] = cell_data;
-      occupied_cell_list_[index_1d] = 1;
+      occupied_cell_list_[index_1d] = true;
     }
     else
     {

@@ -49,10 +49,7 @@ namespace pcl
 {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-RangeImageBorderExtractor::RangeImageBorderExtractor(const RangeImage* range_image) :
-  range_image_(range_image), range_image_size_during_extraction_(0),
-  surface_structure_(nullptr), border_descriptions_(nullptr), shadow_border_informations_(nullptr), border_directions_(nullptr),
-  surface_change_scores_(nullptr), surface_change_directions_(nullptr)
+RangeImageBorderExtractor::RangeImageBorderExtractor(const RangeImage* range_image) : range_image_(range_image)
 {
 }
 
@@ -204,7 +201,7 @@ RangeImageBorderExtractor::extractBorderScoreImages ()
 float*
 RangeImageBorderExtractor::updatedScoresAccordingToNeighborValues (const float* border_scores) const
 {
-  float* new_scores = new float[range_image_->width*range_image_->height];
+  float* new_scores = new float[static_cast<std::size_t>(range_image_->width)*static_cast<std::size_t>(range_image_->height)];
   float* new_scores_ptr = new_scores;
   for (int y=0; y < static_cast<int> (range_image_->height); ++y)
     for (int x=0; x < static_cast<int> (range_image_->width); ++x)
@@ -216,7 +213,7 @@ std::vector<float>
 RangeImageBorderExtractor::updatedScoresAccordingToNeighborValues (const std::vector<float>& border_scores) const
 {
   std::vector<float> new_border_scores;
-  new_border_scores.reserve (range_image_->width*range_image_->height);
+  new_border_scores.reserve (static_cast<std::size_t>(range_image_->width)*static_cast<std::size_t>(range_image_->height));
   for (int y=0; y < static_cast<int> (range_image_->height); ++y)
     for (int x=0; x < static_cast<int> (range_image_->width); ++x)
       new_border_scores.push_back (updatedScoreAccordingToNeighborValues(x, y, border_scores.data ()));
@@ -251,15 +248,14 @@ RangeImageBorderExtractor::findAndEvaluateShadowBorders ()
 
   //MEASURE_FUNCTION_TIME;
 
-  int width  = range_image_->width,
+  std::size_t width  = range_image_->width,
       height = range_image_->height;
   shadow_border_informations_ = new ShadowBorderIndices*[width*height];
   for (int y = 0; y < static_cast<int> (height); ++y)
   {
     for (int x = 0; x < static_cast<int> (width); ++x)
     {
-      int index = y*width+x;
-      ShadowBorderIndices*& shadow_border_indices = shadow_border_informations_[index];
+      ShadowBorderIndices*& shadow_border_indices = shadow_border_informations_[y*width+x];
       shadow_border_indices = nullptr;
       int shadow_border_idx;
 
@@ -614,8 +610,8 @@ RangeImageBorderExtractor::blurSurfaceChanges ()
 
   const RangeImage& range_image = *range_image_;
 
-  auto* blurred_directions = new Eigen::Vector3f[range_image.width*range_image.height];
-  float* blurred_scores = new float[range_image.width*range_image.height];
+  auto* blurred_directions = new Eigen::Vector3f[static_cast<std::size_t>(range_image.width)*static_cast<std::size_t>(range_image.height)];
+  float* blurred_scores = new float[static_cast<std::size_t>(range_image.width)*static_cast<std::size_t>(range_image.height)];
   for (int y=0; y<static_cast<int>(range_image.height); ++y)
   {
     for (int x=0; x<static_cast<int>(range_image.width); ++x)

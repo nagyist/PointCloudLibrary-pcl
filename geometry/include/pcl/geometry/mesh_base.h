@@ -48,6 +48,7 @@
 #include <pcl/pcl_macros.h>
 #include <pcl/point_cloud.h>
 
+#include <cassert>
 #include <type_traits>
 #include <vector>
 
@@ -323,25 +324,28 @@ public:
     }
 
     // Adjust the indices
-    for (auto it = vertices_.begin(); it != vertices_.end(); ++it) {
-      if (it->idx_outgoing_half_edge_.isValid()) {
-        it->idx_outgoing_half_edge_ =
-            new_half_edge_indices[it->idx_outgoing_half_edge_.get()];
+    for (auto& vertex : vertices_) {
+      if (vertex.idx_outgoing_half_edge_.isValid()) {
+        vertex.idx_outgoing_half_edge_ =
+            new_half_edge_indices[vertex.idx_outgoing_half_edge_.get()];
       }
     }
 
-    for (auto it = half_edges_.begin(); it != half_edges_.end(); ++it) {
-      it->idx_terminating_vertex_ =
-          new_vertex_indices[it->idx_terminating_vertex_.get()];
-      it->idx_next_half_edge_ = new_half_edge_indices[it->idx_next_half_edge_.get()];
-      it->idx_prev_half_edge_ = new_half_edge_indices[it->idx_prev_half_edge_.get()];
-      if (it->idx_face_.isValid()) {
-        it->idx_face_ = new_face_indices[it->idx_face_.get()];
+    for (auto& half_edge : half_edges_) {
+      half_edge.idx_terminating_vertex_ =
+          new_vertex_indices[half_edge.idx_terminating_vertex_.get()];
+      half_edge.idx_next_half_edge_ =
+          new_half_edge_indices[half_edge.idx_next_half_edge_.get()];
+      half_edge.idx_prev_half_edge_ =
+          new_half_edge_indices[half_edge.idx_prev_half_edge_.get()];
+      if (half_edge.idx_face_.isValid()) {
+        half_edge.idx_face_ = new_face_indices[half_edge.idx_face_.get()];
       }
     }
 
-    for (auto it = faces_.begin(); it != faces_.end(); ++it) {
-      it->idx_inner_half_edge_ = new_half_edge_indices[it->idx_inner_half_edge_.get()];
+    for (auto& face : faces_) {
+      face.idx_inner_half_edge_ =
+          new_half_edge_indices[face.idx_inner_half_edge_.get()];
     }
   }
 
@@ -1091,7 +1095,7 @@ public:
              &vertex_data <= &vertex_data_cloud_.back());
       return (VertexIndex(std::distance(&vertex_data_cloud_.front(), &vertex_data)));
     }
-    return (VertexIndex());
+    return {};
   }
 
   /** \brief Get the index associated to the given half-edge data. */
@@ -1104,7 +1108,7 @@ public:
       return (HalfEdgeIndex(
           std::distance(&half_edge_data_cloud_.front(), &half_edge_data)));
     }
-    return (HalfEdgeIndex());
+    return {};
   }
 
   /** \brief Get the index associated to the given edge data. */
@@ -1116,7 +1120,7 @@ public:
              &edge_data <= &edge_data_cloud_.back());
       return (EdgeIndex(std::distance(&edge_data_cloud_.front(), &edge_data)));
     }
-    return (EdgeIndex());
+    return {};
   }
 
   /** \brief Get the index associated to the given face data. */
@@ -1128,7 +1132,7 @@ public:
              &face_data <= &face_data_cloud_.back());
       return (FaceIndex(std::distance(&face_data_cloud_.front(), &face_data)));
     }
-    return (FaceIndex());
+    return {};
   }
 
 protected:
@@ -1162,7 +1166,7 @@ protected:
   {
     const int n = static_cast<int>(vertices.size());
     if (n < 3)
-      return (FaceIndex());
+      return {};
 
     // Check for topological errors
     inner_he_.resize(n);
@@ -1175,7 +1179,7 @@ protected:
                                 inner_he_[i],
                                 is_new_[i],
                                 IsManifold())) {
-        return (FaceIndex());
+        return {};
       }
     }
     for (int i = 0; i < n; ++i) {
@@ -1188,7 +1192,7 @@ protected:
                                 make_adjacent_[i],
                                 free_he_[i],
                                 IsManifold())) {
-        return (FaceIndex());
+        return {};
       }
     }
 
@@ -1329,7 +1333,7 @@ protected:
                  HalfEdgeIndex& /*idx_free_half_edge*/,
                  std::true_type /*is_manifold*/) const
   {
-    return !(is_new_ab && is_new_bc && !is_isolated_b);
+    return (!is_new_ab || !is_new_bc || is_isolated_b);
   }
 
   /** \brief Check if the half-edge bc is the next half-edge of ab.
@@ -1800,14 +1804,14 @@ protected:
                                 typename IndexContainerT::value_type());
     Index ind_old(0), ind_new(0);
 
-    typename ElementContainerT::const_iterator it_e_old = elements.begin();
+    auto it_e_old = elements.cbegin();
     auto it_e_new = elements.begin();
 
-    typename DataContainerT::const_iterator it_d_old = data_cloud.begin();
+    auto it_d_old = data_cloud.cbegin();
     auto it_d_new = data_cloud.begin();
 
     auto it_ind_new = new_indices.begin();
-    typename IndexContainerT::const_iterator it_ind_new_end = new_indices.end();
+    auto it_ind_new_end = new_indices.cend();
 
     while (it_ind_new != it_ind_new_end) {
       if (!this->isDeleted(ind_old)) {

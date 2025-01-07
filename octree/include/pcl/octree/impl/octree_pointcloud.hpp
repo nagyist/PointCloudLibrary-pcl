@@ -55,18 +55,16 @@ pcl::octree::OctreePointCloud<PointT, LeafContainerT, BranchContainerT, OctreeT>
 : OctreeT()
 , input_(PointCloudConstPtr())
 , indices_(IndicesConstPtr())
-, epsilon_(0)
 , resolution_(resolution)
-, min_x_(0.0f)
 , max_x_(resolution)
-, min_y_(0.0f)
 , max_y_(resolution)
-, min_z_(0.0f)
 , max_z_(resolution)
-, bounding_box_defined_(false)
-, max_objs_per_leaf_(0)
 {
-  assert(resolution > 0.0f);
+  if (resolution <= 0.0) {
+    PCL_THROW_EXCEPTION(InitFailedException,
+                        "[pcl::octree::OctreePointCloud::OctreePointCloud] Resolution "
+                            << resolution << " must be > 0!");
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -339,7 +337,12 @@ pcl::octree::OctreePointCloud<PointT, LeafContainerT, BranchContainerT, OctreeT>
   PointT max_pt;
 
   // bounding box cannot be changed once the octree contains elements
-  assert(this->leaf_count_ == 0);
+  if (this->leaf_count_ != 0) {
+    PCL_ERROR("[pcl::octree::OctreePointCloud::defineBoundingBox] Leaf count (%lu) "
+              "must be 0\n",
+              this->leaf_count_);
+    return;
+  }
 
   pcl::getMinMax3D(*input_, min_pt, max_pt);
 
@@ -372,7 +375,12 @@ pcl::octree::OctreePointCloud<PointT, LeafContainerT, BranchContainerT, OctreeT>
                       const double max_z_arg)
 {
   // bounding box cannot be changed once the octree contains elements
-  assert(this->leaf_count_ == 0);
+  if (this->leaf_count_ != 0) {
+    PCL_ERROR("[pcl::octree::OctreePointCloud::defineBoundingBox] Leaf count (%lu) "
+              "must be 0\n",
+              this->leaf_count_);
+    return;
+  }
 
   min_x_ = std::min(min_x_arg, max_x_arg);
   min_y_ = std::min(min_y_arg, max_y_arg);
@@ -400,7 +408,12 @@ pcl::octree::OctreePointCloud<PointT, LeafContainerT, BranchContainerT, OctreeT>
                       const double max_z_arg)
 {
   // bounding box cannot be changed once the octree contains elements
-  assert(this->leaf_count_ == 0);
+  if (this->leaf_count_ != 0) {
+    PCL_ERROR("[pcl::octree::OctreePointCloud::defineBoundingBox] Leaf count (%lu) "
+              "must be 0\n",
+              this->leaf_count_);
+    return;
+  }
 
   min_x_ = std::min(0.0, max_x_arg);
   min_y_ = std::min(0.0, max_y_arg);
@@ -426,7 +439,12 @@ pcl::octree::OctreePointCloud<PointT, LeafContainerT, BranchContainerT, OctreeT>
     defineBoundingBox(const double cubeLen_arg)
 {
   // bounding box cannot be changed once the octree contains elements
-  assert(this->leaf_count_ == 0);
+  if (this->leaf_count_ != 0) {
+    PCL_ERROR("[pcl::octree::OctreePointCloud::defineBoundingBox] Leaf count (%lu) "
+              "must be 0\n",
+              this->leaf_count_);
+    return;
+  }
 
   min_x_ = std::min(0.0, cubeLen_arg);
   min_y_ = std::min(0.0, cubeLen_arg);
@@ -499,9 +517,9 @@ pcl::octree::OctreePointCloud<PointT, LeafContainerT, BranchContainerT, OctreeT>
 
         // octree not empty - we add another tree level and thus increase its size by a
         // factor of 2*2*2
-        child_idx = static_cast<unsigned char>(((!bUpperBoundViolationX) << 2) |
-                                               ((!bUpperBoundViolationY) << 1) |
-                                               ((!bUpperBoundViolationZ)));
+        child_idx = static_cast<unsigned char>(((bLowerBoundViolationX) << 2) |
+                                               ((bLowerBoundViolationY) << 1) |
+                                               ((bLowerBoundViolationZ)));
 
         BranchNode* newRootBranch;
 
@@ -514,13 +532,13 @@ pcl::octree::OctreePointCloud<PointT, LeafContainerT, BranchContainerT, OctreeT>
 
         octreeSideLen = static_cast<double>(1 << this->octree_depth_) * resolution_;
 
-        if (!bUpperBoundViolationX)
+        if (bLowerBoundViolationX)
           min_x_ -= octreeSideLen;
 
-        if (!bUpperBoundViolationY)
+        if (bLowerBoundViolationY)
           min_y_ -= octreeSideLen;
 
-        if (!bUpperBoundViolationZ)
+        if (bLowerBoundViolationZ)
           min_z_ -= octreeSideLen;
 
         // configure tree depth of octree
@@ -868,12 +886,9 @@ pcl::octree::OctreePointCloud<PointT, LeafContainerT, BranchContainerT, OctreeT>
   min_pt(2) = static_cast<float>(static_cast<double>(key_arg.z) * voxel_side_len +
                                  this->min_z_);
 
-  max_pt(0) = static_cast<float>(static_cast<double>(key_arg.x + 1) * voxel_side_len +
-                                 this->min_x_);
-  max_pt(1) = static_cast<float>(static_cast<double>(key_arg.y + 1) * voxel_side_len +
-                                 this->min_y_);
-  max_pt(2) = static_cast<float>(static_cast<double>(key_arg.z + 1) * voxel_side_len +
-                                 this->min_z_);
+  max_pt(0) = min_pt(0) + voxel_side_len;
+  max_pt(1) = min_pt(1) + voxel_side_len;
+  max_pt(2) = min_pt(2) + voxel_side_len;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////

@@ -70,7 +70,7 @@ using NotCompatWithFlann = std::enable_if_t<!compat_with_flann<IndexT>::value, b
 } // namespace detail
 
 /**
- * @brief Comaptibility template function to allow use of various types of indices with
+ * @brief Compatibility template function to allow use of various types of indices with
  * FLANN
  * @details Template is used for all params to not constrain any FLANN side capability
  * @param[in,out] index A index searcher, of type ::flann::Index<Dist> or similar, where
@@ -96,7 +96,7 @@ radius_search(const FlannIndex& index,
               const SearchParams& params);
 
 /**
- * @brief Comaptibility template function to allow use of various types of indices with
+ * @brief Compatibility template function to allow use of various types of indices with
  * FLANN
  * @details Template is used for all params to not constrain any FLANN side capability
  * @param[in,out] index A index searcher, of type ::flann::Index<Dist> or similar, where
@@ -296,14 +296,14 @@ private:
   std::vector<int> index_mapping_;
 
   /** \brief whether the mapping between internal and external indices is identity */
-  bool identity_mapping_;
+  bool identity_mapping_{false};
 
   /** \brief Tree dimensionality (i.e. the number of dimensions per point). */
-  int dim_;
+  int dim_{0};
 
   /** \brief The total size of the data (either equal to the number of points in the
    * input cloud or to the number of indices - if passed). */
-  uindex_t total_nr_points_;
+  uindex_t total_nr_points_{0};
 
   /** \brief The KdTree search parameters for K-nearest neighbors. */
   ::flann::SearchParams param_k_;

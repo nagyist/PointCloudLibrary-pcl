@@ -41,10 +41,8 @@
 #include <iostream>
 #include <vector>
 
+#include <pcl/common/pcl_filesystem.h>
 #include <pcl/console/parse.h>
-
-#include <boost/filesystem.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp> // for microsec_clock::local_time
 
 #include <pcl/gpu/kinfu/kinfu.h>
 #include <pcl/gpu/kinfu/raycaster.h>
@@ -174,20 +172,19 @@ namespace pcl
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 std::vector<std::string> getPcdFilesInDir(const std::string& directory)
 {
-  namespace fs = boost::filesystem;
-  fs::path dir(directory);
+  pcl_fs::path dir(directory);
  
   std::cout << "path: " << directory << std::endl;
-  if (directory.empty() || !fs::exists(dir) || !fs::is_directory(dir))
+  if (directory.empty() || !pcl_fs::exists(dir) || !pcl_fs::is_directory(dir))
     PCL_THROW_EXCEPTION (pcl::IOException, "No valid PCD directory given!\n");
     
   std::vector<std::string> result;
-  fs::directory_iterator pos(dir);
-  fs::directory_iterator end;           
+  pcl_fs::directory_iterator pos(dir);
+  pcl_fs::directory_iterator end;           
 
   for(; pos != end ; ++pos)
-    if (fs::is_regular_file(pos->status()) )
-      if (fs::extension(*pos) == ".pcd")
+    if (pcl_fs::is_regular_file(pos->status()) )
+      if (pos->path().extension().string() == ".pcd")
       {
         result.push_back (pos->path ().string ());
         std::cout << "added: " << result.back() << std::endl;
@@ -201,24 +198,24 @@ std::vector<std::string> getPcdFilesInDir(const std::string& directory)
 struct SampledScopeTime : public StopWatch
 {          
   enum { EACH = 33 };
-  SampledScopeTime(int& time_ms) : time_ms_(time_ms) {}
+  SampledScopeTime(double& time_s) : time_s_(time_s) {}
   ~SampledScopeTime()
   {
     static int i_ = 0;
-    static boost::posix_time::ptime starttime_ = boost::posix_time::microsec_clock::local_time();
-    time_ms_ += getTime ();
+    static double starttime_ = pcl::getTime();
+    time_s_ += getTime ();
     if (i_ % EACH == 0 && i_)
     {
-      boost::posix_time::ptime endtime_ = boost::posix_time::microsec_clock::local_time();
-      std::cout << "Average frame time = " << time_ms_ / EACH << "ms ( " << 1000.f * EACH / time_ms_ << "fps )"
-           << "( real: " << 1000.f * EACH / (endtime_-starttime_).total_milliseconds() << "fps )"  << std::endl;
-      time_ms_ = 0;
+      const auto endtime_ = pcl::getTime();
+      std::cout << "Average frame time = " << time_s_ / EACH << "ms ( " << EACH / time_s_ << "fps )"
+           << "( real: " <<EACH / (endtime_-starttime_) << "fps )"  << std::endl;
+      time_s_ = 0;
       starttime_ = endtime_;
     }
     ++i_;
   }
 private:    
-  int& time_ms_;
+  double& time_s_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -651,7 +648,7 @@ struct KinFuApp
   enum { PCD_BIN = 1, PCD_ASCII = 2, PLY = 3, MESH_PLY = 7, MESH_VTK = 8 };
   
   KinFuApp(pcl::Grabber& source, float vsz, int icp, int viz, CameraPoseProcessor::Ptr pose_processor=CameraPoseProcessor::Ptr () ) : exit_ (false), scan_ (false), scan_mesh_(false), scan_volume_ (false), independent_camera_ (false),
-      registration_ (false), integrate_colors_ (false), pcd_source_ (false), focal_length_(-1.f), capture_ (source), scene_cloud_view_(viz), image_view_(viz), time_ms_(0), icp_(icp), viz_(viz), pose_processor_ (pose_processor)
+      registration_ (false), integrate_colors_ (false), pcd_source_ (false), focal_length_(-1.f), capture_ (source), scene_cloud_view_(viz), image_view_(viz), time_s_(0), icp_(icp), viz_(viz), pose_processor_ (pose_processor)
   {    
     //Init Kinfu Tracker
     Eigen::Vector3f volume_size = Vector3f::Constant (vsz/*meters*/);    
@@ -775,7 +772,7 @@ struct KinFuApp
           image_view_.colors_device_.upload (rgb24.data, rgb24.step, rgb24.rows, rgb24.cols);
     
       {
-        SampledScopeTime fps(time_ms_);
+        SampledScopeTime fps(time_s_);
     
         //run kinfu algorithm
         if (integrate_colors_)
@@ -1119,7 +1116,7 @@ struct KinFuApp
   PtrStepSz<const unsigned short> depth_;
   PtrStepSz<const KinfuTracker::PixelRGB> rgb24_;
 
-  int time_ms_;
+  double time_s_;
   int icp_, viz_;
 
   CameraPoseProcessor::Ptr pose_processor_;
@@ -1247,7 +1244,7 @@ main (int argc, char* argv[])
   pcl::gpu::printShortCudaDeviceInfo (device);
 
 //  if (checkIfPreFermiGPU(device))
-//    return std::cout << std::endl << "Kinfu is supported only for Fermi and Kepler arhitectures. It is not even compiled for pre-Fermi by default. Exiting..." << std::endl, 1;
+//    return std::cout << std::endl << "Kinfu is supported only for Fermi and Kepler architectures. It is not even compiled for pre-Fermi by default. Exiting..." << std::endl, 1;
   
   std::unique_ptr<pcl::Grabber> capture;
   

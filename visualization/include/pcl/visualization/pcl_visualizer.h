@@ -111,7 +111,7 @@ namespace pcl
         PCLVisualizer (const std::string &name = "", const bool create_interactor = true);
 
         /** \brief PCL Visualizer constructor. It looks through the passed argv arguments to find the "-cam *.cam" argument.
-          *        If the search failed, the name for cam file is calculated with boost uuid. If there is no such file, camera is not initilalized.
+          *        If the search failed, the name for cam file is calculated with boost uuid. If there is no such file, camera is not initialized.
           * \param[in] argc
           * \param[in] argv
           * \param[in] name the window name (empty by default)
@@ -288,6 +288,8 @@ namespace pcl
           *  \param[in] time - How long (in ms) should the visualization loop be allowed to run.
           *  \param[in] force_redraw - if false it might return without doing anything if the
           *  interactor's framerate does not require a redraw yet.
+          *  \note This function may not return immediately after the specified time has elapsed, for example if
+          *  the user continues to interact with the visualizer, meaning that there are still events to process.
           */
         void
         spinOnce (int time = 1, bool force_redraw = false);
@@ -1816,11 +1818,6 @@ namespace pcl
         std::string
         getCameraFile () const;
 
-        /** \brief Update camera parameters and render. */
-        PCL_DEPRECATED(1,15,"updateCamera will be removed, as it does nothing.")
-        inline void
-        updateCamera () {};
-
         /** \brief Reset camera parameters and render. */
         void
         resetCamera ();
@@ -1964,6 +1961,7 @@ namespace pcl
           * buffer objects by default, transparently for the user.
           * \param[in] use_vbos set to true to use VBOs
           */
+        PCL_DEPRECATED(1, 18, "this function has no effect")
         void
         setUseVbos (bool use_vbos);
 
@@ -2068,27 +2066,27 @@ namespace pcl
         {
           static FPSCallback *New () { return (new FPSCallback); }
 
-          FPSCallback () : actor (), pcl_visualizer (), decimated (), last_fps(0.0f) {}
+          FPSCallback () = default;
           FPSCallback (const FPSCallback& src)  = default;
           FPSCallback& operator = (const FPSCallback& src) { actor = src.actor; pcl_visualizer = src.pcl_visualizer; decimated = src.decimated; last_fps = src.last_fps; return (*this); }
 
           void
           Execute (vtkObject*, unsigned long event_id, void*) override;
 
-          vtkTextActor *actor;
-          PCLVisualizer* pcl_visualizer;
-          bool decimated;
-          float last_fps;
+          vtkTextActor *actor{nullptr};
+          PCLVisualizer* pcl_visualizer{nullptr};
+          bool decimated{false};
+          float last_fps{0.0f};
         };
 
         /** \brief The FPSCallback object for the current visualizer. */
         vtkSmartPointer<FPSCallback> update_fps_;
 
         /** \brief Set to false if the interaction loop is running. */
-        bool stopped_;
+        bool stopped_{false};
 
         /** \brief Global timer ID. Used in destructor only. */
-        int timer_id_;
+        int timer_id_{0};
 
         /** \brief Callback object enabling us to leave the main loop, when a timer fires. */
         vtkSmartPointer<ExitMainLoopTimerCallback> exit_main_loop_timer_callback_;

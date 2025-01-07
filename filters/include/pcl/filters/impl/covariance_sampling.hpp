@@ -75,8 +75,8 @@ pcl::CovarianceSampling<PointT, PointNT>::initCompute ()
   }
 
   average_norm /= static_cast<double>(scaled_points_.size ());
-  for (std::size_t p_i = 0; p_i < scaled_points_.size (); ++p_i)
-    scaled_points_[p_i] /= static_cast<float>(average_norm);
+  for (auto & scaled_point : scaled_points_)
+    scaled_point /= static_cast<float>(average_norm);
 
   return (true);
 }
@@ -164,7 +164,7 @@ pcl::CovarianceSampling<PointT, PointNT>::applyFilter (Indices &sampled_indices)
   for (std::size_t i = 0; i < 6; ++i)
   {
     for (std::size_t p_i = 0; p_i < candidate_indices.size (); ++p_i)
-      L[i].push_back (std::make_pair (p_i, std::abs (v[p_i].dot (x.block<6, 1> (0, i)))));
+      L[i].emplace_back(p_i, std::abs (v[p_i].dot (x.block<6, 1> (0, i))));
 
     // Sort in decreasing order
     L[i].sort (sort_dot_list_function);

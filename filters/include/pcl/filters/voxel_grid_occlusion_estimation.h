@@ -47,7 +47,15 @@ namespace pcl
   /** \brief VoxelGrid to estimate occluded space in the scene.
     * The ray traversal algorithm is implemented by the work of 
     * 'John Amanatides and Andrew Woo, A Fast Voxel Traversal Algorithm for Ray Tracing'
-    *
+    * Example code:
+    * \code
+    * pcl::VoxelGridOcclusionEstimation<pcl::PointXYZ> vg;
+    * vg.setInputCloud (input_cloud);
+    * vg.setLeafSize (leaf_x, leaf_y, leaf_z);
+    * vg.initializeVoxelGrid ();
+    * std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i> > occluded_voxels;
+    * vg.occlusionEstimationAll (occluded_voxels);
+    * \endcode
     * \author Christian Potthast
     * \ingroup filters
     */
@@ -67,7 +75,7 @@ namespace pcl
 
     public:
 
-      PCL_MAKE_ALIGNED_OPERATOR_NEW;
+      PCL_MAKE_ALIGNED_OPERATOR_NEW
 
       /** \brief Empty constructor. */
       VoxelGridOcclusionEstimation ()
@@ -208,7 +216,7 @@ namespace pcl
                     const Eigen::Vector4f& direction,
                     const float t_min);
 
-      /** \brief Returns a rounded value. 
+      /** \brief Returns a value rounded to the nearest integer
         * \param[in] d
         * \return rounded value
         */
@@ -218,8 +226,7 @@ namespace pcl
         return static_cast<float> (std::floor (d + 0.5f));
       }
 
-      // We use round here instead of std::floor due to some numerical issues.
-      /** \brief Returns the corresponding (i,j,k) coordinates in the grid of point (x,y,z). 
+      /** \brief Returns the corresponding (i,j,k) coordinates in the grid of point (x,y,z).
         * \param[in] x the X point coordinate to get the (i, j, k) index at
         * \param[in] y the Y point coordinate to get the (i, j, k) index at
         * \param[in] z the Z point coordinate to get the (i, j, k) index at
@@ -227,9 +234,9 @@ namespace pcl
       inline Eigen::Vector3i
       getGridCoordinatesRound (float x, float y, float z) 
       {
-        return Eigen::Vector3i (static_cast<int> (round (x * inverse_leaf_size_[0])), 
-                                static_cast<int> (round (y * inverse_leaf_size_[1])), 
-                                static_cast<int> (round (z * inverse_leaf_size_[2])));
+        return {static_cast<int> (round (x * inverse_leaf_size_[0])),
+                                static_cast<int> (round (y * inverse_leaf_size_[1])),
+                                static_cast<int> (round (z * inverse_leaf_size_[2]))};
       }
 
       // initialization flag

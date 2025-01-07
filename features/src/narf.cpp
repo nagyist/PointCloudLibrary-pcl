@@ -55,10 +55,7 @@ namespace pcl
 int Narf::max_no_of_threads = 1;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Narf::Narf() : 
-  surface_patch_ (nullptr), 
-  surface_patch_pixel_size_ (0), surface_patch_world_size_ (), 
-  surface_patch_rotation_ (), descriptor_ (nullptr), descriptor_size_ (0)
+Narf::Narf()
 {
   reset();
 }
@@ -70,10 +67,7 @@ Narf::~Narf()
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Narf::Narf (const Narf& other) : 
-  surface_patch_ (nullptr), 
-  surface_patch_pixel_size_ (0), surface_patch_world_size_ (), 
-  surface_patch_rotation_ (), descriptor_ (nullptr), descriptor_size_ (0)
+Narf::Narf (const Narf& other)
 {
   deepCopy (other);
 }
@@ -115,9 +109,9 @@ Narf::deepCopy (const Narf& other)
   {
     surface_patch_pixel_size_ = other.surface_patch_pixel_size_;
     delete[] surface_patch_;
-    surface_patch_ = new float[surface_patch_pixel_size_*surface_patch_pixel_size_];
+    surface_patch_ = new float[static_cast<std::size_t>(surface_patch_pixel_size_)*static_cast<std::size_t>(surface_patch_pixel_size_)];
   }
-  std::copy(other.surface_patch_, other.surface_patch_ + surface_patch_pixel_size_*surface_patch_pixel_size_, surface_patch_);
+  std::copy(other.surface_patch_, other.surface_patch_ + static_cast<ptrdiff_t>(surface_patch_pixel_size_)*static_cast<ptrdiff_t>(surface_patch_pixel_size_), surface_patch_);
   surface_patch_world_size_ = other.surface_patch_world_size_;
   surface_patch_rotation_ = other.surface_patch_rotation_;
   
@@ -376,6 +370,8 @@ Narf::extractForInterestPoints (const RangeImage& range_image, const PointCloud<
   schedule(dynamic, 10) \
   num_threads(max_no_of_threads)
   //!!! nizar 20110408 : for OpenMP sake on MSVC this must be kept signed
+  // Disable lint since this 'for' is part of the pragma
+  // NOLINTNEXTLINE(modernize-loop-convert)
   for (std::ptrdiff_t idx = 0; idx < static_cast<std::ptrdiff_t>(interest_points.size ()); ++idx)
   {
     const auto& interest_point = interest_points[idx];
@@ -389,7 +385,7 @@ Narf::extractForInterestPoints (const RangeImage& range_image, const PointCloud<
     else {
       if (!rotation_invariant)
       {
-#       pragma omp critical
+#pragma omp critical
         {
           feature_list.push_back(feature);
         }
@@ -409,7 +405,7 @@ Narf::extractForInterestPoints (const RangeImage& range_image, const PointCloud<
               delete feature2;
               continue;
             }
-#           pragma omp critical
+#pragma omp critical
             {
               feature_list.push_back(feature2);
             }
@@ -525,7 +521,7 @@ Narf::saveBinary (std::ostream& file) const
   pcl::saveBinary(transformation_.matrix(), file);
   file.write(reinterpret_cast<const char*>(&surface_patch_pixel_size_), sizeof(surface_patch_pixel_size_));
   file.write(reinterpret_cast<const char*>(surface_patch_),
-             surface_patch_pixel_size_*surface_patch_pixel_size_*sizeof(*surface_patch_));
+             sizeof(*surface_patch_)*surface_patch_pixel_size_*surface_patch_pixel_size_);
   file.write(reinterpret_cast<const char*>(&surface_patch_world_size_), sizeof(surface_patch_world_size_));
   file.write(reinterpret_cast<const char*>(&surface_patch_rotation_), sizeof(surface_patch_rotation_));
   file.write(reinterpret_cast<const char*>(&descriptor_size_), sizeof(descriptor_size_));
@@ -577,9 +573,9 @@ Narf::loadBinary (std::istream& file)
   pcl::loadBinary(position_.matrix(), file);
   pcl::loadBinary(transformation_.matrix(), file);
   file.read(reinterpret_cast<char*>(&surface_patch_pixel_size_), sizeof(surface_patch_pixel_size_));
-  surface_patch_ = new float[surface_patch_pixel_size_*surface_patch_pixel_size_];
+  surface_patch_ = new float[static_cast<std::size_t>(surface_patch_pixel_size_)*static_cast<std::size_t>(surface_patch_pixel_size_)];
   file.read(reinterpret_cast<char*>(surface_patch_),
-            surface_patch_pixel_size_*surface_patch_pixel_size_*sizeof(*surface_patch_));
+            sizeof(*surface_patch_)*surface_patch_pixel_size_*surface_patch_pixel_size_);
   file.read(reinterpret_cast<char*>(&surface_patch_world_size_), sizeof(surface_patch_world_size_));
   file.read(reinterpret_cast<char*>(&surface_patch_rotation_), sizeof(surface_patch_rotation_));
   file.read(reinterpret_cast<char*>(&descriptor_size_), sizeof(descriptor_size_));
@@ -602,8 +598,7 @@ Narf::loadBinary (const std::string& filename)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-NarfDescriptor::NarfDescriptor (const RangeImage* range_image, const pcl::Indices* indices) : 
-  range_image_ ()
+NarfDescriptor::NarfDescriptor (const RangeImage* range_image, const pcl::Indices* indices)
 {
   setRangeImage (range_image, indices);
 }

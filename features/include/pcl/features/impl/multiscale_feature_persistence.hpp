@@ -45,8 +45,7 @@
 //////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointSource, typename PointFeature>
 pcl::MultiscaleFeaturePersistence<PointSource, PointFeature>::MultiscaleFeaturePersistence () : 
-  alpha_ (0), 
-  distance_metric_ (L1),
+  
   feature_estimator_ (),
   features_at_scale_ (),
   feature_representation_ ()
@@ -91,10 +90,10 @@ pcl::MultiscaleFeaturePersistence<PointSource, PointFeature>::computeFeaturesAtA
   features_at_scale_.reserve (scale_values_.size ());
   features_at_scale_vectorized_.clear ();
   features_at_scale_vectorized_.reserve (scale_values_.size ());
-  for (std::size_t scale_i = 0; scale_i < scale_values_.size (); ++scale_i)
+  for (float & scale_value : scale_values_)
   {
     FeatureCloudPtr feature_cloud (new FeatureCloud ());
-    computeFeatureAtScale (scale_values_[scale_i], feature_cloud);
+    computeFeatureAtScale (scale_value, feature_cloud);
     features_at_scale_.push_back(feature_cloud);
 
     // Vectorize each feature and insert it into the vectorized feature storage

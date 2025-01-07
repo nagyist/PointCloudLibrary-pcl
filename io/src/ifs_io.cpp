@@ -42,7 +42,6 @@
 
 #include <cstring>
 #include <cerrno>
-#include <boost/filesystem.hpp> // for exists
 #include <boost/iostreams/device/mapped_file.hpp> // for mapped_file_source
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -60,15 +59,22 @@ pcl::IFSReader::readHeader (const std::string &file_name, pcl::PCLPointCloud2 &c
   //cloud.is_dense = true;
 
   std::uint32_t nr_points = 0;
-  std::ifstream fs;
 
-  if (file_name.empty() || !boost::filesystem::exists (file_name))
+  if (file_name.empty ())
+  {
+    PCL_ERROR ("[pcl::IFSReader::readHeader] No file name given!\n");
+    return (-1);
+  }
+
+  std::ifstream fs;
+  fs.open (file_name.c_str (), std::ios::binary);
+
+  if (!fs.good ())
   {
     PCL_ERROR ("[pcl::IFSReader::readHeader] Could not find file '%s'.\n", file_name.c_str ());
     return (-1);
   }
 
-  fs.open (file_name.c_str (), std::ios::binary);
   if (!fs.is_open () || fs.fail ())
   {
     PCL_ERROR ("[pcl::IFSReader::readHeader] Could not open file '%s'! Error : %s\n", file_name.c_str (), strerror(errno));
@@ -213,7 +219,7 @@ pcl::IFSReader::read (const std::string &file_name,
   }
 
   // Copy the data
-  memcpy (&cloud.data[0], mapped_file.data () + data_idx, cloud.data.size ());
+  memcpy (cloud.data.data(), mapped_file.data () + data_idx, cloud.data.size ());
 
   mapped_file.close ();
 
@@ -264,7 +270,7 @@ pcl::IFSReader::read (const std::string &file_name, pcl::PolygonMesh &mesh, int 
   }
 
   // Copy the data
-  memcpy (&mesh.cloud.data[0], mapped_file.data () + data_idx, mesh.cloud.data.size ());
+  memcpy (mesh.cloud.data.data(), mapped_file.data () + data_idx, mesh.cloud.data.size ());
 
   mapped_file.close ();
 
@@ -308,6 +314,7 @@ pcl::IFSReader::read (const std::string &file_name, pcl::PolygonMesh &mesh, int 
   {
     pcl::Vertices &facet = mesh.polygons[i];
     facet.vertices.resize (3);
+    // NOLINTNEXTLINE(readability-container-data-pointer)
     fs.read (reinterpret_cast<char*>(&(facet.vertices[0])), sizeof (std::uint32_t));
     fs.read (reinterpret_cast<char*>(&(facet.vertices[1])), sizeof (std::uint32_t));
     fs.read (reinterpret_cast<char*>(&(facet.vertices[2])), sizeof (std::uint32_t));
@@ -345,7 +352,7 @@ pcl::IFSWriter::write (const std::string &file_name, const pcl::PCLPointCloud2 &
                             sizeof (std::uint32_t) + cloud_name.size () + 1 +
                             sizeof (std::uint32_t) + vertices.size () + 1 +
                             sizeof (std::uint32_t));
-  char* addr = &(header[0]);
+  char* addr = header.data();
   const std::uint32_t magic_size = static_cast<std::uint32_t> (magic.size ()) + 1;
   memcpy (addr, &magic_size, sizeof (std::uint32_t));
   addr+= sizeof (std::uint32_t);
@@ -396,10 +403,10 @@ pcl::IFSWriter::write (const std::string &file_name, const pcl::PCLPointCloud2 &
   }
 
   // copy header
-  memcpy (sink.data (), &header[0], data_idx);
+  memcpy (sink.data (), header.data(), data_idx);
 
   // Copy the data
-  memcpy (sink.data () + data_idx, &cloud.data[0], cloud.data.size ());
+  memcpy (sink.data () + data_idx, cloud.data.data(), cloud.data.size ());
 
   sink.close ();
 

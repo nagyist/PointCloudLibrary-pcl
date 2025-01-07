@@ -92,7 +92,7 @@ pcl::VLPGrabber::loadVLP16Corrections ()
 boost::asio::ip::address
 pcl::VLPGrabber::getDefaultNetworkAddress ()
 {
-  return (boost::asio::ip::address::from_string ("255.255.255.255"));
+  return (boost::asio::ip::make_address ("255.255.255.255"));
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -215,7 +215,7 @@ pcl::VLPGrabber::toPointClouds (HDLDataPacket *dataPacket)
 std::string
 pcl::VLPGrabber::getName () const
 {
-  return (std::string ("Velodyne LiDAR (VLP) Grabber"));
+  return {"Velodyne LiDAR (VLP) Grabber"};
 }
 
 /////////////////////////////////////////////////////////////////////////////

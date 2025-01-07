@@ -44,14 +44,7 @@ namespace octree {
 //////////////////////////////////////////////////////////////////////////////////////////////
 template <typename LeafContainerT, typename BranchContainerT>
 Octree2BufBase<LeafContainerT, BranchContainerT>::Octree2BufBase()
-: leaf_count_(0)
-, branch_count_(1)
-, root_node_(new BranchNode())
-, depth_mask_(0)
-, buffer_selector_(0)
-, tree_dirty_flag_(false)
-, octree_depth_(0)
-, dynamic_depth_enabled_(false)
+: root_node_(new BranchNode())
 {}
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -71,7 +64,12 @@ Octree2BufBase<LeafContainerT, BranchContainerT>::setMaxVoxelIndex(
 {
   uindex_t treeDepth;
 
-  assert(max_voxel_index_arg > 0);
+  if (max_voxel_index_arg <= 0) {
+    PCL_ERROR("[pcl::octree::Octree2BufBase::setMaxVoxelIndex] Max voxel index (%lu) "
+              "must be > 0!\n",
+              max_voxel_index_arg);
+    return;
+  }
 
   // tree depth == amount of bits of maxVoxels
   treeDepth =
@@ -88,7 +86,12 @@ template <typename LeafContainerT, typename BranchContainerT>
 void
 Octree2BufBase<LeafContainerT, BranchContainerT>::setTreeDepth(uindex_t depth_arg)
 {
-  assert(depth_arg > 0);
+  if (depth_arg <= 0) {
+    PCL_ERROR(
+        "[pcl::octree::Octree2BufBase::setTreeDepth] Tree depth (%lu) must be > 0!\n",
+        depth_arg);
+    return;
+  }
 
   // set octree depth
   octree_depth_ = depth_arg;
@@ -276,8 +279,8 @@ Octree2BufBase<LeafContainerT, BranchContainerT>::deserializeTree(
   leaf_count_ = 0;
 
   // iterator for binary tree structure vector
-  std::vector<char>::const_iterator binary_tree_in_it = binary_tree_in_arg.begin();
-  std::vector<char>::const_iterator binary_tree_in_it_end = binary_tree_in_arg.end();
+  auto binary_tree_in_it = binary_tree_in_arg.cbegin();
+  auto binary_tree_in_it_end = binary_tree_in_arg.cend();
 
   deserializeTreeRecursive(root_node_,
                            depth_mask_,
@@ -304,19 +307,17 @@ Octree2BufBase<LeafContainerT, BranchContainerT>::deserializeTree(
   OctreeKey new_key;
 
   // set data iterator to first element
-  typename std::vector<LeafContainerT*>::const_iterator leaf_container_vector_it =
-      leaf_container_vector_arg.begin();
+  auto leaf_container_vector_it = leaf_container_vector_arg.cbegin();
 
   // set data iterator to last element
-  typename std::vector<LeafContainerT*>::const_iterator leaf_container_vector_it_end =
-      leaf_container_vector_arg.end();
+  auto leaf_container_vector_it_end = leaf_container_vector_arg.cend();
 
   // we will rebuild an octree -> reset leafCount
   leaf_count_ = 0;
 
   // iterator for binary tree structure vector
-  std::vector<char>::const_iterator binary_tree_in_it = binary_tree_in_arg.begin();
-  std::vector<char>::const_iterator binary_tree_in_it_end = binary_tree_in_arg.end();
+  auto binary_tree_in_it = binary_tree_in_arg.cbegin();
+  auto binary_tree_in_it_end = binary_tree_in_arg.cend();
 
   deserializeTreeRecursive(root_node_,
                            depth_mask_,

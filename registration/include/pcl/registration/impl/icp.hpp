@@ -44,6 +44,7 @@
 #include <pcl/correspondence.h>
 
 namespace pcl {
+// NOLINTBEGIN(readability-container-data-pointer)
 
 template <typename PointSource, typename PointTarget, typename Scalar>
 void
@@ -158,8 +159,6 @@ IterativeClosestPoint<PointSource, PointTarget, Scalar>::computeTransformation(
   convergence_criteria_->setTranslationThreshold(transformation_epsilon_);
   if (transformation_rotation_epsilon_ > 0)
     convergence_criteria_->setRotationThreshold(transformation_rotation_epsilon_);
-  else
-    convergence_criteria_->setRotationThreshold(1.0 - transformation_epsilon_);
 
   // Repeat until convergence
   do {
@@ -317,6 +316,7 @@ IterativeClosestPointWithNormals<PointSource, PointTarget, Scalar>::transformClo
 {
   pcl::transformPointCloudWithNormals(input, output, transform);
 }
+// NOLINTEND(readability-container-data-pointer)
 
 } // namespace pcl
 

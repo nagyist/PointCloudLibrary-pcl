@@ -24,10 +24,10 @@ pcl::simulation::TriangleMeshModel::TriangleMeshModel(pcl::PolygonMesh::Ptr plg)
     for (const auto& polygon : plg->polygons) {
       for (const auto& point : polygon.vertices) {
         tmp = newcloud[point].getVector4fMap();
-        vertices.push_back(Vertex(Eigen::Vector3f(tmp(0), tmp(1), tmp(2)),
-                                  Eigen::Vector3f(newcloud[point].r / 255.0f,
-                                                  newcloud[point].g / 255.0f,
-                                                  newcloud[point].b / 255.0f)));
+        vertices.emplace_back(Eigen::Vector3f(tmp(0), tmp(1), tmp(2)),
+                              Eigen::Vector3f(newcloud[point].r / 255.0f,
+                                              newcloud[point].g / 255.0f,
+                                              newcloud[point].b / 255.0f));
         indices.push_back(indices.size());
       }
     }
@@ -39,8 +39,8 @@ pcl::simulation::TriangleMeshModel::TriangleMeshModel(pcl::PolygonMesh::Ptr plg)
     for (const auto& polygon : plg->polygons) {
       for (const auto& point : polygon.vertices) {
         tmp = newcloud[point].getVector4fMap();
-        vertices.push_back(Vertex(Eigen::Vector3f(tmp(0), tmp(1), tmp(2)),
-                                  Eigen::Vector3f(1.0, 1.0, 1.0)));
+        vertices.emplace_back(Eigen::Vector3f(tmp(0), tmp(1), tmp(2)),
+                              Eigen::Vector3f(1.0, 1.0, 1.0));
         indices.push_back(indices.size());
       }
     }
@@ -53,7 +53,7 @@ pcl::simulation::TriangleMeshModel::TriangleMeshModel(pcl::PolygonMesh::Ptr plg)
   glBindBuffer(GL_ARRAY_BUFFER, vbo_);
   glBufferData(GL_ARRAY_BUFFER,
                vertices.size() * sizeof(vertices[0]),
-               &(vertices[0]),
+               vertices.data(),
                GL_STATIC_DRAW);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -61,7 +61,7 @@ pcl::simulation::TriangleMeshModel::TriangleMeshModel(pcl::PolygonMesh::Ptr plg)
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo_);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER,
                indices.size() * sizeof(indices[0]),
-               &(indices[0]),
+               indices.data(),
                GL_STATIC_DRAW);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 

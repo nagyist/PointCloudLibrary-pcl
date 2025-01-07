@@ -42,6 +42,7 @@
 #include <pcl/memory.h>
 #include <pcl/pcl_macros.h>
 #include <pcl/point_cloud.h>
+#include <pcl/common/point_tests.h> // for pcl::isFinite
 #include <pcl/search/search.h>
 #include <pcl/common/eigen.h>
 
@@ -52,10 +53,14 @@ namespace pcl
 {
   namespace search
   {
-    /** \brief OrganizedNeighbor is a class for optimized nearest neighbor search in organized point clouds.
-      * \author Radu B. Rusu, Julius Kammerl, Suat Gedikli, Koen Buys
-      * \ingroup search
-      */
+    /** \brief OrganizedNeighbor is a class for optimized nearest neighbor search in
+     * organized projectable point clouds, for instance from Time-Of-Flight cameras or
+     * stereo cameras. Note that rotating LIDARs may output organized clouds, but are
+     * not projectable via a pinhole camera model into two dimensions and thus will
+     * generally not work with this class.
+     * \author Radu B. Rusu, Julius Kammerl, Suat Gedikli, Koen Buys
+     * \ingroup search
+     */
     template<typename PointT>
     class OrganizedNeighbor : public pcl::search::Search<PointT>
     {
@@ -76,7 +81,7 @@ namespace pcl
 
         /** \brief Constructor
           * \param[in] sorted_results whether the results should be return sorted in ascending order on the distances or not.
-          *        This applies only for radius search, since knn always returns sorted resutls    
+          *        This applies only for radius search, since knn always returns sorted results    
           * \param[in] eps the threshold for the mean-squared-error of the estimation of the projection matrix.
           *            if the MSE is above this value, the point cloud is considered as not from a projective device,
           *            thus organized neighbor search can not be applied on that cloud.
@@ -121,7 +126,7 @@ namespace pcl
           * \param[in] cloud the const boost shared pointer to a PointCloud message
           * \param[in] indices the const boost shared pointer to PointIndices
           */
-        void
+        bool
         setInputCloud (const PointCloudConstPtr& cloud, const IndicesConstPtr &indices = IndicesConstPtr ()) override
         {
           input_ = cloud;
@@ -134,12 +139,18 @@ namespace pcl
           {
             mask_.assign (input_->size (), 0);
             for (const auto& idx : *indices_)
-              mask_[idx] = 1;
+              if (pcl::isFinite((*input_)[idx]))
+                mask_[idx] = 1;
           }
           else
-            mask_.assign (input_->size (), 1);
+          {
+            mask_.assign (input_->size (), 0);
+            for (std::size_t idx=0; idx<input_->size(); ++idx)
+              if (pcl::isFinite((*input_)[idx]))
+                mask_[idx] = 1;
+          }
 
-          estimateProjectionMatrix ();
+          return estimateProjectionMatrix () && isValid ();
         }
 
         /** \brief Search for all neighbors of query point that are within a given radius.
@@ -160,7 +171,7 @@ namespace pcl
                       unsigned int max_nn = 0) const override;
 
         /** \brief estimated the projection matrix from the input cloud. */
-        void 
+        bool
         estimateProjectionMatrix ();
 
          /** \brief Search for the k-nearest neighbors for a given query point.
@@ -212,7 +223,7 @@ namespace pcl
         testPoint (const PointT& query, unsigned k, std::vector<Entry>& queue, index_t index) const
         {
           const PointT& point = input_->points [index];
-          if (mask_ [index] && std::isfinite (point.x))
+          if (mask_ [index])
           {
             //float squared_distance = (point.getVector3fMap () - query.getVector3fMap ()).squaredNorm ();
             float dist_x = point.x - query.x;
@@ -274,7 +285,7 @@ namespace pcl
         /** \brief using only a subsample of points to calculate the projection matrix. pyramid_level_ = use down sampled cloud given by pyramid_level_*/
         const unsigned pyramid_level_;
         
-        /** \brief mask, indicating whether the point was in the indices list or not.*/
+        /** \brief mask, indicating whether the point was in the indices list or not, and whether it is finite.*/
         std::vector<unsigned char> mask_;
       public:
         PCL_MAKE_ALIGNED_OPERATOR_NEW

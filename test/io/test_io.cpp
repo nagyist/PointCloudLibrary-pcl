@@ -49,6 +49,7 @@
 #include <pcl/io/ascii_io.h>
 #include <pcl/io/obj_io.h>
 #include <fstream>
+#include <iomanip> // for setprecision
 #include <locale>
 #include <stdexcept>
 
@@ -1081,7 +1082,7 @@ TEST(PCL, OBJRead)
   fs.close ();
 
   pcl::PCLPointCloud2 blob;
-  pcl::OBJReader objreader = pcl::OBJReader();
+  pcl::OBJReader objreader;
   int res = objreader.read ("test_obj.obj", blob);
   EXPECT_NE (res, -1);
   EXPECT_EQ (blob.width, 8);
@@ -1119,6 +1120,25 @@ TEST(PCL, OBJRead)
   EXPECT_EQ (blob.fields[5].offset, 4 * 5);
   EXPECT_EQ (blob.fields[5].count, 1);
   EXPECT_EQ (blob.fields[5].datatype, pcl::PCLPointField::FLOAT32);
+
+  auto fblob = reinterpret_cast<const float*>(blob.data.data());
+
+  size_t offset_p = 0;
+  size_t offset_vn = blob.fields[3].offset / 4;
+  for (size_t i = 0; i < blob.width; ++i, offset_p += 6, offset_vn += 6)
+  {
+    Eigen::Vector3f expected_normal =
+        Eigen::Vector3f(fblob[offset_p], fblob[offset_p + 1], fblob[offset_p + 2])
+            .normalized();
+
+    Eigen::Vector3f actual_normal =
+        Eigen::Vector3f(fblob[offset_vn], fblob[offset_vn + 1], fblob[offset_vn + 2])
+            .normalized();
+
+    EXPECT_NEAR(expected_normal.x(), actual_normal.x(), 1e-4);
+    EXPECT_NEAR(expected_normal.y(), actual_normal.y(), 1e-4);
+    EXPECT_NEAR(expected_normal.z(), actual_normal.z(), 1e-4);
+  }
 
   remove ("test_obj.obj");
   remove ("test_obj.mtl");
@@ -1380,6 +1400,74 @@ TEST (PCL, LZFExtended)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+TEST (PCL, WriteBinaryToOStream)
+{
+  PointCloud<PointXYZRGBNormal> cloud;
+  cloud.width  = 640;
+  cloud.height = 480;
+  cloud.resize (cloud.width * cloud.height);
+  cloud.is_dense = true;
+
+  srand (static_cast<unsigned int> (time (nullptr)));
+  const auto nr_p = cloud.size ();
+  // Randomly create a new point cloud
+  for (std::size_t i = 0; i < nr_p; ++i)
+  {
+    cloud[i].x = static_cast<float> (1024 * rand () / (RAND_MAX + 1.0));
+    cloud[i].y = static_cast<float> (1024 * rand () / (RAND_MAX + 1.0));
+    cloud[i].z = static_cast<float> (1024 * rand () / (RAND_MAX + 1.0));
+    cloud[i].normal_x = static_cast<float> (1024 * rand () / (RAND_MAX + 1.0));
+    cloud[i].normal_y = static_cast<float> (1024 * rand () / (RAND_MAX + 1.0));
+    cloud[i].normal_z = static_cast<float> (1024 * rand () / (RAND_MAX + 1.0));
+    cloud[i].rgb = static_cast<float> (1024 * rand () / (RAND_MAX + 1.0));
+  }
+
+  pcl::PCLPointCloud2 blob;
+  pcl::toPCLPointCloud2 (cloud, blob);
+
+  std::ostringstream oss;
+  PCDWriter writer;
+  int res = writer.writeBinary (oss, blob);
+  EXPECT_EQ (res, 0);
+  std::string pcd_str = oss.str ();
+
+  Eigen::Vector4f origin;
+  Eigen::Quaternionf orientation;
+  int pcd_version = -1;
+  int data_type = -1;
+  unsigned int data_idx = 0;
+  std::istringstream iss (pcd_str, std::ios::binary);
+  PCDReader reader;
+  pcl::PCLPointCloud2 blob2;
+  res = reader.readHeader (iss, blob2, origin, orientation, pcd_version, data_type, data_idx);
+  EXPECT_EQ (res, 0);
+  EXPECT_EQ (blob2.width, blob.width);
+  EXPECT_EQ (blob2.height, blob.height);
+  EXPECT_EQ (data_type, 1); // since it was written by writeBinary (), it should be uncompressed.
+
+  const auto *data = reinterpret_cast<const unsigned char *> (pcd_str.data ());
+  res = reader.readBodyBinary (data, blob2, pcd_version, data_type == 2, data_idx);
+  PointCloud<PointXYZRGBNormal> cloud2;
+  pcl::fromPCLPointCloud2 (blob2, cloud2);
+  EXPECT_EQ (res, 0);
+  EXPECT_EQ (cloud2.width, blob.width);
+  EXPECT_EQ (cloud2.height, blob.height);
+  EXPECT_EQ (cloud2.is_dense, cloud.is_dense);
+  EXPECT_EQ (cloud2.size (), cloud.size ());
+
+  for (std::size_t i = 0; i < cloud2.size (); ++i)
+  {
+    EXPECT_EQ (cloud2[i].x, cloud[i].x);
+    EXPECT_EQ (cloud2[i].y, cloud[i].y);
+    EXPECT_EQ (cloud2[i].z, cloud[i].z);
+    EXPECT_EQ (cloud2[i].normal_x, cloud[i].normal_x);
+    EXPECT_EQ (cloud2[i].normal_y, cloud[i].normal_y);
+    EXPECT_EQ (cloud2[i].normal_z, cloud[i].normal_z);
+    EXPECT_EQ (cloud2[i].rgb, cloud[i].rgb);
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 TEST (PCL, LZFInMem)
 {
   PointCloud<PointXYZRGBNormal> cloud;
@@ -1451,27 +1539,29 @@ TEST (PCL, LZFInMem)
 TEST (PCL, Locale)
 {
 #ifndef __APPLE__
+  PointCloud<PointXYZ> cloud, cloud2, cloud3;
+  cloud.width  = 640;
+  cloud.height = 480;
+  cloud.resize (cloud.width * cloud.height);
+  cloud.is_dense = true;
+
+  srand (static_cast<unsigned int> (time (nullptr)));
+  const auto nr_p = cloud.size ();
+  // Randomly create a new point cloud
+  cloud[0].x = std::numeric_limits<float>::quiet_NaN ();
+  cloud[0].y = std::numeric_limits<float>::quiet_NaN ();
+  cloud[0].z = std::numeric_limits<float>::quiet_NaN ();
+
+  for (std::size_t i = 1; i < nr_p; ++i)
+  {
+    cloud[i].x = static_cast<float> (1024 * rand () / (RAND_MAX + 1.0));
+    cloud[i].y = static_cast<float> (1024 * rand () / (RAND_MAX + 1.0));
+    cloud[i].z = static_cast<float> (1024 * rand () / (RAND_MAX + 1.0));
+  }
+
+  // First write with German locale, then read with English locale
   try
   {
-    PointCloud<PointXYZ> cloud, cloud2;
-    cloud.width  = 640;
-    cloud.height = 480;
-    cloud.resize (cloud.width * cloud.height);
-    cloud.is_dense = true;
-
-    srand (static_cast<unsigned int> (time (nullptr)));
-    const auto nr_p = cloud.size ();
-    // Randomly create a new point cloud
-    cloud[0].x = std::numeric_limits<float>::quiet_NaN ();
-    cloud[0].y = std::numeric_limits<float>::quiet_NaN ();
-    cloud[0].z = std::numeric_limits<float>::quiet_NaN ();
-  
-    for (std::size_t i = 1; i < nr_p; ++i)
-    {
-      cloud[i].x = static_cast<float> (1024 * rand () / (RAND_MAX + 1.0));
-      cloud[i].y = static_cast<float> (1024 * rand () / (RAND_MAX + 1.0));
-      cloud[i].z = static_cast<float> (1024 * rand () / (RAND_MAX + 1.0));
-    }
     PCDWriter writer;
     try
     {
@@ -1521,6 +1611,56 @@ TEST (PCL, Locale)
   }
   catch (const std::exception&)
   {
+  }
+
+  remove ("test_pcl_io_ascii_locale.pcd");
+
+  // Now write with English locale, then read with German locale
+  try
+  {
+#ifdef _WIN32
+    std::locale::global (std::locale ("English_US"));
+#else
+    std::locale::global (std::locale ("en_US.UTF-8"));
+#endif
+  }
+  catch (const std::runtime_error&)
+  {
+    PCL_WARN ("Failed to set locale, skipping test.\n");
+  }
+  PCDWriter writer;
+  int res = writer.writeASCII<PointXYZ> ("test_pcl_io_ascii_locale.pcd", cloud);
+  EXPECT_EQ (res, 0);
+
+  PCDReader reader;
+  try
+  {
+#ifdef _WIN32
+    std::locale::global (std::locale ("German_germany"));
+#else
+    std::locale::global (std::locale ("de_DE.UTF-8"));
+#endif
+  }
+  catch (const std::runtime_error&)
+  {
+    PCL_WARN ("Failed to set locale, skipping test.\n");
+  }
+  reader.read<PointXYZ> ("test_pcl_io_ascii_locale.pcd", cloud3);
+  std::locale::global (std::locale::classic ());
+
+  EXPECT_EQ (cloud3.width, cloud.width);
+  EXPECT_EQ (cloud3.height, cloud.height);
+  EXPECT_FALSE (cloud3.is_dense);
+  EXPECT_EQ (cloud3.size (), cloud.size ());
+
+  EXPECT_TRUE (std::isnan(cloud3[0].x));
+  EXPECT_TRUE (std::isnan(cloud3[0].y));
+  EXPECT_TRUE (std::isnan(cloud3[0].z));
+  for (std::size_t i = 1; i < cloud3.size (); ++i)
+  {
+    ASSERT_FLOAT_EQ (cloud3[i].x, cloud[i].x);
+    ASSERT_FLOAT_EQ (cloud3[i].y, cloud[i].y);
+    ASSERT_FLOAT_EQ (cloud3[i].z, cloud[i].z);
   }
 
   remove ("test_pcl_io_ascii_locale.pcd");

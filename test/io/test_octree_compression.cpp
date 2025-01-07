@@ -53,19 +53,19 @@ char* pcd_file;
 template<typename PointT> inline PointT generateRandomPoint(const float MAX_XYZ);
 
 template<> inline pcl::PointXYZRGBA generateRandomPoint(const float MAX_XYZ) {
-  return pcl::PointXYZRGBA(static_cast<float> (MAX_XYZ * rand() / RAND_MAX),
+  return {static_cast<float> (MAX_XYZ * rand() / RAND_MAX),
                            static_cast<float> (MAX_XYZ * rand() / RAND_MAX),
                            static_cast<float> (MAX_XYZ * rand() / RAND_MAX),
-                           static_cast<int> (MAX_COLOR * rand() / RAND_MAX),
-                           static_cast<int> (MAX_COLOR * rand() / RAND_MAX),
-                           static_cast<int> (MAX_COLOR * rand() / RAND_MAX),
-                           static_cast<int> (MAX_COLOR * rand() / RAND_MAX));
+                           static_cast<std::uint8_t> (MAX_COLOR * rand() / RAND_MAX),
+                           static_cast<std::uint8_t> (MAX_COLOR * rand() / RAND_MAX),
+                           static_cast<std::uint8_t> (MAX_COLOR * rand() / RAND_MAX),
+                           static_cast<std::uint8_t> (MAX_COLOR * rand() / RAND_MAX)};
 }
 
 template<> inline pcl::PointXYZ generateRandomPoint(const float MAX_XYZ) {
-  return pcl::PointXYZ(static_cast<float> (MAX_XYZ * rand() / RAND_MAX),
+  return {static_cast<float> (MAX_XYZ * rand() / RAND_MAX),
                        static_cast<float> (MAX_XYZ * rand() / RAND_MAX),
-                       static_cast<float> (MAX_XYZ * rand() / RAND_MAX));
+                       static_cast<float> (MAX_XYZ * rand() / RAND_MAX)};
 }
 
 template<typename PointT> inline
@@ -177,8 +177,8 @@ TEST(PCL, OctreeDeCompressionFile)
     pcl::io::OctreePointCloudCompression<pcl::PointXYZRGB> PointCloudDecoder;
 
     // iterate over various voxel sizes
-    for (std::size_t i = 0; i < sizeof(voxel_sizes)/sizeof(voxel_sizes[0]); i++) {
-      pcl::octree::OctreePointCloud<pcl::PointXYZRGB> octree(voxel_sizes[i]);
+    for (const float& voxel_size : voxel_sizes) {
+      pcl::octree::OctreePointCloud<pcl::PointXYZRGB> octree(voxel_size);
       pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_out(new pcl::PointCloud<pcl::PointXYZRGB>());
       octree.setInputCloud((*input_cloud_ptr).makeShared());
       octree.addPointsFromInputCloud();

@@ -41,7 +41,6 @@
 #ifndef PCL_SAMPLE_CONSENSUS_IMPL_SAC_MODEL_SPHERE_H_
 #define PCL_SAMPLE_CONSENSUS_IMPL_SAC_MODEL_SPHERE_H_
 
-#include <unsupported/Eigen/NonLinearOptimization> // for LevenbergMarquardt
 #include <pcl/sample_consensus/sac_model_sphere.h>
 
 //////////////////////////////////////////////////////////////////////////
@@ -354,14 +353,20 @@ pcl::SampleConsensusModelSphere<PointT>::optimizeModelCoefficients (
     return;
   }
 
-  OptimizationFunctor functor (this, inliers);
-  Eigen::NumericalDiff<OptimizationFunctor> num_diff (functor);
-  Eigen::LevenbergMarquardt<Eigen::NumericalDiff<OptimizationFunctor>, float> lm (num_diff);
-  int info = lm.minimize (optimized_coefficients);
+  Eigen::ArrayXf pts_x(inliers.size());
+  Eigen::ArrayXf pts_y(inliers.size());
+  Eigen::ArrayXf pts_z(inliers.size());
+  std::size_t pos = 0;
+  for(const auto& index : inliers) {
+    pts_x[pos] = (*input_)[index].x;
+    pts_y[pos] = (*input_)[index].y;
+    pts_z[pos] = (*input_)[index].z;
+    ++pos;
+  }
+  pcl::internal::optimizeModelCoefficientsSphere(optimized_coefficients, pts_x, pts_y, pts_z);
 
-  // Compute the L2 norm of the residuals
-  PCL_DEBUG ("[pcl::SampleConsensusModelSphere::optimizeModelCoefficients] LM solver finished with exit code %i, having a residual norm of %g. \nInitial solution: %g %g %g %g \nFinal solution: %g %g %g %g\n",
-             info, lm.fvec.norm (), model_coefficients[0], model_coefficients[1], model_coefficients[2], model_coefficients[3], optimized_coefficients[0], optimized_coefficients[1], optimized_coefficients[2], optimized_coefficients[3]);
+  PCL_DEBUG ("[pcl::SampleConsensusModelSphere::optimizeModelCoefficients] Initial solution: %g %g %g %g \nFinal solution: %g %g %g %g\n",
+             model_coefficients[0], model_coefficients[1], model_coefficients[2], model_coefficients[3], optimized_coefficients[0], optimized_coefficients[1], optimized_coefficients[2], optimized_coefficients[3]);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -399,20 +404,20 @@ pcl::SampleConsensusModelSphere<PointT>::projectPoints (
       pcl::for_each_type <FieldList> (NdConcatenateFunctor <PointT, PointT> (input_->points[i], projected_points.points[i]));
 
     // Iterate through the 3d points and calculate the distances from them to the sphere
-    for (std::size_t i = 0; i < inliers.size (); ++i)
+    for (const auto& inlier : inliers)
     {
       // what i have:
       // P : Sample Point
-      const Eigen::Vector3d P (input_->points[inliers[i]].x, input_->points[inliers[i]].y, input_->points[inliers[i]].z);
+      const Eigen::Vector3d P (input_->points[inlier].x, input_->points[inlier].y, input_->points[inlier].z);
 
       const Eigen::Vector3d direction = (P - C).normalized();
 
       // K : Point on Sphere
       const Eigen::Vector3d K = C + r * direction;
 
-      projected_points.points[inliers[i]].x = static_cast<float> (K[0]);
-      projected_points.points[inliers[i]].y = static_cast<float> (K[1]);
-      projected_points.points[inliers[i]].z = static_cast<float> (K[2]);
+      projected_points.points[inlier].x = static_cast<float> (K[0]);
+      projected_points.points[inlier].y = static_cast<float> (K[1]);
+      projected_points.points[inlier].z = static_cast<float> (K[2]);
     }
   }
   else

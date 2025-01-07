@@ -35,16 +35,16 @@
  *         Christian Potthast (potthast@usc.edu)
  */
 
+#include <pcl/common/pcl_filesystem.h>
 #include <pcl/common/time.h>
 #include <pcl/console/parse.h>
 #include <pcl/console/print.h>
 #include <pcl/io/openni_grabber.h>
 #include <pcl/io/pcd_io.h>
+#include <pcl/io/timestamp.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-
-#include <boost/filesystem.hpp>
 
 #include <mutex>
 
@@ -74,7 +74,6 @@ using namespace std::chrono_literals;
 #endif
 
 using namespace pcl::console;
-using namespace boost::filesystem;
 
 template <typename PointType>
 class OpenNIGrabFrame {
@@ -157,8 +156,7 @@ public:
   saveCloud()
   {
     FPS_CALC("I/O");
-    const std::string time = boost::posix_time::to_iso_string(
-        boost::posix_time::microsec_clock::local_time());
+    const std::string time = pcl::getTimestamp();
     const std::string filepath = dir_name_ + '/' + file_name_ + '_' + time + ".pcd";
 
     if (format_ & 1) {
@@ -222,7 +220,7 @@ public:
              bool paused,
              bool visualizer)
   {
-    boost::filesystem::path path(filename);
+    pcl_fs::path path(filename);
 
     if (filename.empty()) {
       dir_name_ = ".";
@@ -231,7 +229,7 @@ public:
     else {
       dir_name_ = path.parent_path().string();
 
-      if (!dir_name_.empty() && !boost::filesystem::exists(path.parent_path())) {
+      if (!dir_name_.empty() && !pcl_fs::exists(path.parent_path())) {
         std::cerr << "directory \"" << path.parent_path() << "\" does not exist!\n";
         exit(1);
       }

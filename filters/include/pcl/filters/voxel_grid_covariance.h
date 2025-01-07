@@ -94,7 +94,6 @@ namespace pcl
          * Sets \ref nr_points, \ref cov_, \ref icov_, \ref mean_ and \ref evals_ to 0 and \ref evecs_ to the identity matrix
          */
         Leaf () :
-          nr_points (0),
           mean_ (Eigen::Vector3d::Zero ()),
           cov_ (Eigen::Matrix3d::Zero ()),
           icov_ (Eigen::Matrix3d::Zero ()),
@@ -160,7 +159,7 @@ namespace pcl
         }
 
         /** \brief Number of points contained by voxel */
-        int nr_points;
+        int nr_points{0};
 
         /** \brief 3D voxel centroid */
         Eigen::Vector3d mean_;
@@ -196,9 +195,6 @@ namespace pcl
        * Sets \ref leaf_size_ to 0 and \ref searchable_ to false.
        */
       VoxelGridCovariance () :
-        searchable_ (true),
-        min_points_per_voxel_ (6),
-        min_covar_eigvalue_mult_ (0.01),
         leaves_ (),
         voxel_centroids_ (),
         kdtree_ ()
@@ -438,9 +434,10 @@ namespace pcl
 
       /** \brief Get a cloud to visualize each voxels normal distribution.
        * \param[out] cell_cloud a cloud created by sampling the normal distributions of each voxel
+       * \param[in] pnt_per_cell how many points should be generated for each cell
        */
       void
-      getDisplayCloud (pcl::PointCloud<PointXYZ>& cell_cloud);
+      getDisplayCloud (pcl::PointCloud<PointXYZ>& cell_cloud, int pnt_per_cell = 1000) const;
 
       /** \brief Search for the k-nearest occupied voxels for the given query point.
        * \note Only voxels containing a sufficient number of points are used.
@@ -464,7 +461,7 @@ namespace pcl
         }
 
         // Find k-nearest neighbors in the occupied voxel centroid cloud
-        Indices k_indices;
+        Indices k_indices (k);
         k = kdtree_.nearestKSearch (point, k, k_indices, k_sqr_distances);
 
         // Find leaves corresponding to neighbors
@@ -568,13 +565,13 @@ namespace pcl
       void applyFilter (PointCloud &output) override;
 
       /** \brief Flag to determine if voxel structure is searchable. */
-      bool searchable_;
+      bool searchable_{true};
 
       /** \brief Minimum points contained with in a voxel to allow it to be usable. */
-      int min_points_per_voxel_;
+      int min_points_per_voxel_{6};
 
       /** \brief Minimum allowable ratio between eigenvalues to prevent singular covariance matrices. */
-      double min_covar_eigvalue_mult_;
+      double min_covar_eigvalue_mult_{0.01};
 
       /** \brief Voxel structure containing all leaf nodes (includes voxels with less than a sufficient number of points). */
       std::map<std::size_t, Leaf> leaves_;

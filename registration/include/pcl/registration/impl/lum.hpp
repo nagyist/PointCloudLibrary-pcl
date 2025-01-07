@@ -203,7 +203,7 @@ LUM<PointT>::getCorrespondences(const Vertex& source_vertex,
   if (source_vertex >= getNumVertices() || target_vertex >= getNumVertices()) {
     PCL_ERROR("[pcl::registration::LUM::getCorrespondences] You are attempting to get "
               "a set of correspondences between non-existing graph vertices.\n");
-    return (pcl::CorrespondencesPtr());
+    return {};
   }
   Edge e;
   bool present;
@@ -211,7 +211,7 @@ LUM<PointT>::getCorrespondences(const Vertex& source_vertex,
   if (!present) {
     PCL_ERROR("[pcl::registration::LUM::getCorrespondences] You are attempting to get "
               "a set of correspondences from a non-existing graph edge.\n");
-    return (pcl::CorrespondencesPtr());
+    return {};
   }
   return ((*slam_graph_)[e].corrs_);
 }
@@ -254,8 +254,8 @@ LUM<PointT>::compute()
 
         // Fill in elements of G and B
         if (vj > 0)
-          G.block(6 * (vi - 1), 6 * (vj - 1), 6, 6) = -(*slam_graph_)[e].cinv_;
-        G.block(6 * (vi - 1), 6 * (vi - 1), 6, 6) += (*slam_graph_)[e].cinv_;
+          G.block<6, 6>(6 * (vi - 1), 6 * (vj - 1)) = -(*slam_graph_)[e].cinv_;
+        G.block<6, 6>(6 * (vi - 1), 6 * (vi - 1)) += (*slam_graph_)[e].cinv_;
         B.segment(6 * (vi - 1), 6) += (present1 ? 1 : -1) * (*slam_graph_)[e].cinvd_;
       }
     }
@@ -268,7 +268,7 @@ LUM<PointT>::compute()
     // Update the poses
     float sum = 0.0;
     for (int vi = 1; vi != n; ++vi) {
-      Eigen::Vector6f difference_pose = static_cast<Eigen::Vector6f>(
+      auto difference_pose = static_cast<Eigen::Vector6f>(
           -incidenceCorrection(getPose(vi)).inverse() * X.segment(6 * (vi - 1), 6));
       sum += difference_pose.norm();
       setPose(vi, getPose(vi) + difference_pose);

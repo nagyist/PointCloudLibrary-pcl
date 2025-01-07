@@ -3,14 +3,16 @@ set(SUBSYS_DESC "Point cloud library io module unit tests")
 PCL_SET_TEST_DEPENDENCIES(SUBSYS_DEPS io)
 set(OPT_DEPS visualization)
 
-set(DEFAULT ON)
-set(build TRUE)
-PCL_SUBSYS_OPTION(build "${SUBSYS_NAME}" "${SUBSYS_DESC}" ${DEFAULT} "${REASON}")
+PCL_SUBSYS_OPTION(build "${SUBSYS_NAME}" "${SUBSYS_DESC}" ON)
 PCL_SUBSYS_DEPEND(build NAME ${SUBSYS_NAME} DEPS ${SUBSYS_DEPS} OPT_DEPS ${OPT_DEPS})
 
 if(NOT build)
   return()
 endif()
+
+PCL_ADD_TEST(timestamp test_timestamp
+              FILES test_timestamp.cpp
+              LINK_WITH pcl_gtest pcl_io)
 
 PCL_ADD_TEST(io_io test_io
               FILES test_io.cpp
@@ -39,7 +41,6 @@ PCL_ADD_TEST(io_ply_io test_ply_io
 
 # Uses VTK readers to verify
 if(VTK_FOUND AND NOT ANDROID)
-  include_directories(SYSTEM ${VTK_INCLUDE_DIRS})
   PCL_ADD_TEST (io_ply_mesh_io test_ply_mesh_io
                 FILES test_ply_mesh_io.cpp
                 LINK_WITH pcl_gtest pcl_io

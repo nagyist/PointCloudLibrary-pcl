@@ -40,17 +40,19 @@
 #ifndef PCL_SURFACE_IMPL_MLS_H_
 #define PCL_SURFACE_IMPL_MLS_H_
 
-#include <pcl/type_traits.h>
-#include <pcl/surface/mls.h>
+#include <pcl/common/centroid.h>
 #include <pcl/common/common.h> // for getMinMax3D
 #include <pcl/common/copy_point.h>
-#include <pcl/common/centroid.h>
 #include <pcl/common/eigen.h>
 #include <pcl/search/kdtree.h> // for KdTree
 #include <pcl/search/organized.h> // for OrganizedNeighbor
+#include <pcl/surface/mls.h>
+#include <pcl/type_traits.h>
 
 #include <Eigen/Geometry> // for cross
 #include <Eigen/LU> // for inverse
+
+#include <memory>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -117,7 +119,7 @@ pcl::MovingLeastSquares<PointInT, PointOutT>::process (PointCloudOut &output)
       std::random_device rd;
       rng_.seed (rd());
       const double tmp = search_radius_ / 2.0;
-      rng_uniform_distribution_.reset (new std::uniform_real_distribution<> (-tmp, tmp));
+      rng_uniform_distribution_ = std::make_unique<std::uniform_real_distribution<>> (-tmp, tmp);
 
       break;
     }
@@ -807,7 +809,7 @@ pcl::MovingLeastSquares<PointInT, PointOutT>::MLSVoxelGrid::MLSVoxelGrid (PointC
                                                                           IndicesPtr &indices,
                                                                           float voxel_size,
                                                                           int dilation_iteration_num) :
-  voxel_grid_ (), data_size_ (), voxel_size_ (voxel_size)
+  voxel_grid_ (),  voxel_size_ (voxel_size)
 {
   pcl::getMinMax3D (*cloud, *indices, bounding_min_, bounding_max_);
   bounding_min_ -= Eigen::Vector4f::Constant(voxel_size_ * (dilation_iteration_num + 1));

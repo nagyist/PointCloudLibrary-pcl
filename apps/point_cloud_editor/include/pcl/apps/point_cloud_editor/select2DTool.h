@@ -57,7 +57,8 @@ class Select2DTool : public ToolInterface
     /// @brief Constructor
     /// @param selection_ptr a shared pointer pointing to the selection object.
     /// @param cloud_ptr a shared pointer pointing to the cloud object.
-    Select2DTool (SelectionPtr selection_ptr, CloudPtr cloud_ptr);
+    /// @param get_viewport_and_projection_mat a function that can be used to get the viewport and the projection matrix
+    Select2DTool (SelectionPtr selection_ptr, CloudPtr cloud_ptr, std::function<void(GLint*,GLfloat*)> get_viewport_and_projection_mat);
 
     /// @brief Destructor
     ~Select2DTool () override;
@@ -134,7 +135,7 @@ class Select2DTool : public ToolInterface
 
     /// @brief highlight all the points in the rubber band.
     /// @detail draw the cloud using a stencil buffer. During this time, the
-    /// points that are highlighted will not be recorded by the selecion object.
+    /// points that are highlighted will not be recorded by the selection object.
     /// @param viewport the viewport obtained from GL
     void
     highlightPoints (GLint* viewport) const;
@@ -154,4 +155,6 @@ class Select2DTool : public ToolInterface
     /// switch for selection box rendering
     bool display_box_;
 
+    /// function to get the viewport and the projection matrix (initialized by ctor)
+    std::function<void(GLint*,GLfloat*)> get_viewport_and_projection_mat_;
 };

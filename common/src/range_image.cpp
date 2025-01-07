@@ -105,16 +105,15 @@ RangeImage::getCoordinateFrameTransformation (RangeImage::CoordinateFrame coordi
 /////////////////////////////////////////////////////////////////////////
 RangeImage::RangeImage () : 
   to_range_image_system_ (Eigen::Affine3f::Identity ()),
-  to_world_system_ (Eigen::Affine3f::Identity ()),
-  angular_resolution_x_ (0), angular_resolution_y_ (0),
-  angular_resolution_x_reciprocal_ (0), angular_resolution_y_reciprocal_ (0),
-  image_offset_x_ (0), image_offset_y_ (0)
+  to_world_system_ (Eigen::Affine3f::Identity ())
 {
   createLookupTables ();
   reset ();
   unobserved_point.x = unobserved_point.y = unobserved_point.z = std::numeric_limits<float>::quiet_NaN ();
   unobserved_point.range = -std::numeric_limits<float>::infinity ();
 }
+
+RangeImage::~RangeImage () = default;
 
 /////////////////////////////////////////////////////////////////////////
 void
@@ -241,7 +240,7 @@ RangeImage::cropImage (int borderSize, int top, int right, int bottom, int left)
   width = right-left+1; height = bottom-top+1;
   image_offset_x_ = left+oldRangeImage.image_offset_x_;
   image_offset_y_ = top+oldRangeImage.image_offset_y_;
-  points.resize (width*height);
+  points.resize (static_cast<std::size_t>(width)*static_cast<std::size_t>(height));
   
   //std::cout << oldRangeImage.width<<"x"<<oldRangeImage.height<<" -> "<<width<<"x"<<height<<"\n";
   
@@ -292,9 +291,9 @@ RangeImage::getRangesArray () const
 void 
 RangeImage::getIntegralImage (float*& integral_image, int*& valid_points_num_image) const
 {
-  integral_image = new float[width*height];
+  integral_image = new float[static_cast<std::size_t>(width)*static_cast<std::size_t>(height)];
   float* integral_image_ptr = integral_image;
-  valid_points_num_image = new int[width*height];
+  valid_points_num_image = new int[static_cast<std::size_t>(width)*static_cast<std::size_t>(height)];
   int* valid_points_num_image_ptr = valid_points_num_image;
   for (int y = 0; y < static_cast<int> (height); ++y)
   {
@@ -353,7 +352,7 @@ RangeImage::getHalfImage (RangeImage& half_image) const
   half_image.height = height/2;
   half_image.is_dense = is_dense;
   half_image.clear ();
-  half_image.resize (half_image.width*half_image.height);
+  half_image.resize (half_image.width, half_image.height);
   
   int src_start_x = 2*half_image.image_offset_x_ - image_offset_x_,
       src_start_y = 2*half_image.image_offset_y_ - image_offset_y_;
@@ -397,7 +396,7 @@ RangeImage::getSubImage (int sub_image_image_offset_x, int sub_image_image_offse
   sub_image.height = sub_image_height;
   sub_image.is_dense = is_dense;
   sub_image.clear ();
-  sub_image.resize (sub_image.width*sub_image.height);
+  sub_image.resize (sub_image.width, sub_image.height);
   
   int src_start_x = combine_pixels*sub_image.image_offset_x_ - image_offset_x_,
       src_start_y = combine_pixels*sub_image.image_offset_y_ - image_offset_y_;
@@ -826,7 +825,7 @@ RangeImage::extractFarRanges (const pcl::PCLPointCloud2& point_cloud_data,
   }
   
   int point_step = point_cloud_data.point_step;
-  const unsigned char* data = &point_cloud_data.data[0];
+  const unsigned char* data = point_cloud_data.data.data();
   int x_offset = point_cloud_data.fields[x_idx].offset,
       y_offset = point_cloud_data.fields[y_idx].offset,
       z_offset = point_cloud_data.fields[z_idx].offset,
@@ -868,7 +867,6 @@ RangeImage::getOverlap (const RangeImage& other_range_image, const Eigen::Affine
   float max_distance_squared = max_distance*max_distance;
   
 #pragma omp parallel for \
-  default(none) \
   shared(max_distance_squared, other_range_image, pixel_step, relative_transformation, search_radius) \
   schedule(dynamic, 1) \
   reduction(+ : valid_points_counter) \

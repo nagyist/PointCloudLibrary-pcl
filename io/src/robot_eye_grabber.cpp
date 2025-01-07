@@ -74,7 +74,7 @@ pcl::RobotEyeGrabber::~RobotEyeGrabber () noexcept
 std::string
 pcl::RobotEyeGrabber::getName () const
 {
-  return (std::string ("Ocular Robotics RobotEye Grabber"));
+  return {"Ocular Robotics RobotEye Grabber"};
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -269,7 +269,7 @@ void
 pcl::RobotEyeGrabber::socketThreadLoop ()
 {
   asyncSocketReceive();
-  io_service_.reset();
+  io_service_.restart();
   io_service_.run();
 }
 
